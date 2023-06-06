@@ -1,0 +1,227 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      6996,        217]
+NotebookOptionsPosition[      6361,        196]
+NotebookOutlinePosition[      6787,        213]
+CellTagsIndexPosition[      6744,        210]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"emptymat", "=", 
+   RowBox[{"Table", "[", 
+    RowBox[{"0", ",", 
+     RowBox[{"{", 
+      RowBox[{"rows", ",", " ", "6"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"cols", ",", " ", "6"}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"F", "=", "emptymat"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"F", "[", 
+    RowBox[{"[", "1", "]"}], "]"}], "=", 
+   RowBox[{"{", 
+    RowBox[{"0", ",", "\[Beta]", ",", "\[Beta]", ",", " ", 
+     RowBox[{"\[Eta]", "*", "\[Beta]"}], ",", " ", "\[Beta]", ",", " ", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"1", " ", "-", " ", "\[Iota]"}], ")"}], " ", "*", " ", 
+      "\[Beta]"}]}], "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"V", " ", "=", " ", "emptymat"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"1", ",", "1"}], "]"}], "]"}], " ", "=", " ", "\[Sigma]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1"}], "]"}], "]"}], " ", "=", " ", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"(", 
+      RowBox[{"1", " ", "-", " ", "\[Theta]"}], ")"}]}], " ", "*", " ", 
+    "\[Omega]", " ", "*", " ", "\[Sigma]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2"}], "]"}], "]"}], " ", "=", "  ", "\[Nu]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"3", ",", "2"}], "]"}], "]"}], " ", "=", "  ", 
+   RowBox[{"-", "\[Nu]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"3", ",", "3"}], "]"}], "]"}], " ", "=", "  ", "\[Gamma]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"4", ",", "1"}], "]"}], "]"}], " ", "=", "  ", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"(", 
+      RowBox[{"1", " ", "-", " ", "\[Omega]"}], ")"}]}], " ", "*", " ", 
+    "\[Sigma]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"4", ",", "4"}], "]"}], "]"}], " ", "=", "  ", "\[Kappa]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"5", ",", "1"}], "]"}], "]"}], " ", "=", "  ", 
+   RowBox[{
+    RowBox[{"-", " ", "\[Theta]"}], " ", "*", " ", "\[Omega]", " ", "*", " ", 
+    "\[Sigma]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"5", ",", "5"}], "]"}], "]"}], " ", "=", "  ", "\[Nu]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"6", ",", "5"}], "]"}], "]"}], " ", "=", "  ", 
+   RowBox[{"-", "\[Nu]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"V", "[", 
+    RowBox[{"[", 
+     RowBox[{"6", ",", "6"}], "]"}], "]"}], " ", "=", "  ", "\[Gamma]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"V2", " ", "=", " ", 
+   RowBox[{"Inverse", "[", "V", "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ev", " ", "=", 
+   RowBox[{"Eigenvalues", "[", 
+    RowBox[{"F", ".", "V2"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"sr", " ", "=", " ", 
+   RowBox[{"ev", "[", 
+    RowBox[{"[", "6", "]"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Print", "[", "sr", "]"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Print", "[", 
+    RowBox[{"FullSimplify", "[", "sr", "]"}], "]"}], ";"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.893164866774865*^9, 3.8931648850728083`*^9}, {
+  3.893165044310801*^9, 3.893165086563652*^9}, {3.893165136590148*^9, 
+  3.89316532393196*^9}, {3.8931657544173594`*^9, 3.893165988937336*^9}, {
+  3.8931660191994267`*^9, 3.893166165673997*^9}, {3.893166243174008*^9, 
+  3.893166377863102*^9}, {3.893166774381*^9, 3.893166954306979*^9}},
+ CellLabel->
+  "In[382]:=",ExpressionUUID->"0c0edf95-d7f4-4133-bfba-49c962fcb27a"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  FractionBox["1", 
+   RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Nu]"}]], 
+  RowBox[{"\[Beta]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", "\[Nu]"}], "+", 
+     RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Omega]"}], "-", 
+     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", "\[Nu]", " ", "\[Omega]"}], "+", 
+     
+     RowBox[{"\[Kappa]", " ", "\[Nu]", " ", "\[Omega]"}], "-", 
+     RowBox[{
+     "\[Theta]", " ", "\[Iota]", " ", "\[Kappa]", " ", "\[Nu]", " ", 
+      "\[Omega]"}]}], ")"}]}]}]], "Print",
+ CellChangeTimes->{{3.893166934250451*^9, 3.8931669566392384`*^9}},
+ CellLabel->
+  "During evaluation of \
+In[382]:=",ExpressionUUID->"058716da-4ab7-4f46-b50d-11cd4ee7592e"],
+
+Cell[BoxData[
+ RowBox[{
+  FractionBox["1", 
+   RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Nu]"}]], 
+  RowBox[{"\[Beta]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Omega]"}], "+", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"1", "-", 
+        RowBox[{"\[Theta]", " ", "\[Iota]"}]}], ")"}], " ", "\[Kappa]", " ", 
+      "\[Nu]", " ", "\[Omega]"}], "+", 
+     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", 
+      RowBox[{"(", 
+       RowBox[{"\[Nu]", "-", 
+        RowBox[{"\[Nu]", " ", "\[Omega]"}]}], ")"}]}]}], ")"}]}]}]], "Print",
+ CellChangeTimes->{{3.893166934250451*^9, 3.893166956640462*^9}},
+ CellLabel->
+  "During evaluation of \
+In[382]:=",ExpressionUUID->"f2909ec2-8666-4b8f-a345-62d9b255c9fd"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1512, 916},
+WindowMargins->{{-1512, Automatic}, {Automatic, 13}},
+Magnification:>2. Inherited,
+FrontEndVersion->"12.1 for Mac OS X x86 (64-bit) (June 19, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"ac73c8a4-db5d-40ae-9b35-1c8a6f6df76e"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 4239, 126, 1066, "Input",ExpressionUUID->"0c0edf95-d7f4-4133-bfba-49c962fcb27a"],
+Cell[CellGroupData[{
+Cell[4844, 152, 737, 18, 72, "Print",ExpressionUUID->"058716da-4ab7-4f46-b50d-11cd4ee7592e"],
+Cell[5584, 172, 749, 20, 72, "Print",ExpressionUUID->"f2909ec2-8666-4b8f-a345-62d9b255c9fd"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
