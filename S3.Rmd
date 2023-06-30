@@ -1,0 +1,357 @@
+---
+title: "S3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(dplyr)
+library(pomp)
+library(readr)
+library(readsdr)
+library(stringr)
+library(tictoc)
+library(tidyr)
+
+source("./R_scripts/plots.R")
+
+pop_val   <- 17475415
+beta_vals <- 0.724637681 * c(1, 1.5, 2)
+```
+
+
+```{r}
+bio_df <- read_csv("./Data/bio_params.csv", 
+                       show_col_types = FALSE)
+
+bio_params        <- as.list(bio_df$Value)
+names(bio_params) <- bio_df$Parameter
+```
+
+```{r}
+fp_mob <- "./models/05_Mobility.stmx"
+
+mdl <- read_xmile(fp_mob, 
+                  const_list = c(bio_params, 
+                                 par_zeta_0 = beta_vals[[2]] * 10,
+                                 par_tau_m = 0),
+                  stock_list = list(Qm = 0))
+```
+
+```{r}
+Qm_vals <- c(30, 60, 90)
+sens_mob <- sd_sensitivity_run(mdl$deSolve_components,
+                               stocks_df = data.frame(Qm = Qm_vals),
+                               start_time   = 0,
+                               stop_time    = 240,
+                               timestep     = 1 / 32, 
+                               multicore    = TRUE)
+```
+
+```{r, fig.height = 3}
+labels <- str_glue("Q[0]^m~'= {Qm_vals }'")
+
+label_df <- data.frame(iter = 1:3, label = labels,
+                    x = c(90, 140, 190),
+                    y = 0.08)
+```
+
+
+# Validation
+
+
+
+```{r}
+fp_synthesis <- "./models/06_Synthesis.stmx"
+
+phi_val    <- 0.65
+iota_v_val <- 0.6
+iota_d_val <- 0.51 
+delta_val  <- 0.6
+
+test_cap_pars <- read_csv("./Data/Testing_capacity_pars.csv", 
+                          show_col_types = FALSE) |> 
+  tibble::deframe() |> as.list()
+
+ct_cap_pars <- read_csv("./Data/Tracing_capacity_pars.csv",
+                        show_col_types = FALSE) |> 
+  tibble::deframe() |> as.list()
+
+mdl_syn <- read_xmile(fp_synthesis,
+                      const_list = c(bio_params,
+                                     par_zeta_0  = beta_vals[[2]] * 10,
+                                     par_rho_v   = 0.15,
+                                     par_alpha_v = 12.26,
+                                     par_phi     = phi_val,
+                                     par_iota_v  = iota_v_val,
+                                     par_iota_d  = iota_d_val,
+                                     par_delta   = delta_val,
+                                     par_rho_d   = test_cap_pars$rho_d,
+                                     par_alpha_d = test_cap_pars$alpha_d,
+                                     par_rho_k   = ct_cap_pars$rho_k,
+                                     par_alpha_k = ct_cap_pars$alpha_k,
+                                     par_tau_m   = 0))
+```
+
+```{r}
+Qv_0 <- 2.45
+Qd_0 <- test_cap_pars$Qd
+Qk_0 <- ct_cap_pars$Qk
+Qm_0 <- 30
+
+s_df <- data.frame(Qv = c(0, Qv_0, 0, 0, 0),
+                   Qd = c(0, 0, Qd_0, Qd_0, 0), 
+                   Qk = c(0, 0, 0, Qk_0, 0),
+                   Qm = c(0, 0, 0, 0, Qm_0))
+tic()
+sim_output_syn <- sd_sensitivity_run(mdl_syn$deSolve_components, 
+                                     stocks_df = s_df,
+                                     start_time = 0,
+                                     stop_time = 1000,
+                                     timestep = 1 / 32,
+                                     reporting_interval = 1/32,
+                                     multicore = TRUE, n_cores = 5) |> 
+  select(time, iter, C_in, Qv, Qd, Qk, Qm) |> 
+  mutate(model        = "Synthesis",
+         intervention =  case_when(iter == 1 ~ "No intervention",
+                                   iter == 2 ~ "Vaccination",
+                                   iter == 3 ~ "Testing & Isolation",
+                                   iter == 4 ~ "Contact tracing",
+                                   iter == 5 ~ "Social distancing"))
+toc()
+```
+
+```{r}
+mdl_base <- read_xmile("./models/01_SEI3R.stmx", 
+                  const_list = c(bio_params,
+                                 par_beta = beta_vals[[2]]))
+tic()
+temp <- sd_simulate(mdl_base$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32)
+
+sim_output_b <- temp |>   select(time, C_in) |> 
+  mutate(intervention = "No intervention",
+         model        = "Single intervention")
+toc()
+
+c_ref <- temp |> filter(time == 600) |> pull(C) / pop_val
+
+rm(temp)
+```
+
+```{r}
+mdl_vacc <- read_xmile("./models/02_Vaccines.stmx", 
+                  const_list = c(bio_params,
+                                 par_beta = beta_vals[[2]],
+                                 par_rho_v   = 0.15,
+                                 par_alpha_v = 12.26,
+                                 par_phi     = phi_val,
+                                 par_iota    = iota_v_val),
+                  stock_list = list(Qv = Qv_0))
+tic()
+sim_output_vacc <- sd_simulate(mdl_vacc$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32) |> 
+  select(time, C_in) |> 
+  mutate(intervention = "Vaccination",
+         model        = "Single intervention")
+toc()
+```
+
+```{r}
+mdl_test <- read_xmile("./models/03_Testing_Isolation.stmx", 
+                       stock_list = list(Qd = Qd_0),
+                       const_list = c(bio_params,
+                                      par_beta    = beta_vals[[2]],
+                                      par_alpha_d = test_cap_pars$alpha_d,
+                                      par_rho_d   = test_cap_pars$rho_d,
+                                      par_iota_d  = iota_d_val,
+                                      par_delta   = delta_val))
+tic()
+sim_output_test <- sd_simulate(mdl_test$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32) |> 
+  select(time, C_in) |> 
+  mutate(intervention = "Testing & Isolation",
+         model        = "Single intervention")
+toc()
+```
+
+```{r}
+fp_ct <- "./models/04_Contact_tracing.stmx"
+
+mdl_ct       <- read_xmile(fp_ct, stock_list = list(Qd = test_cap_pars$Qd,
+                                                 Qk = ct_cap_pars$Qk),
+                        const_list = c(bio_params,
+                                       par_zeta    = beta_vals[[2]] * 10,
+                                       par_alpha_d = test_cap_pars$alpha_d,
+                                       par_alpha_k = ct_cap_pars$alpha_k,
+                                       par_rho_d   = test_cap_pars$rho_d,
+                                       par_rho_k   = ct_cap_pars$rho_k,
+                                       par_iota_d  = iota_d_val,
+                                       par_delta   = delta_val))
+tic()
+sim_output_ct <- sd_simulate(mdl_ct$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32) |> 
+  select(time, C_in) |> 
+  mutate(intervention = "Contact tracing",
+         model        = "Single intervention")
+toc()
+```
+
+```{r}
+mdl_mob <- read_xmile(fp_mob, 
+                      const_list = c(bio_params, 
+                                     par_zeta_0 = beta_vals[[2]] * 10,
+                                     par_tau_m = 0),
+                  stock_list = list(Qm = Qm_0))
+tic()
+sim_output_mob <- sd_simulate(mdl_mob$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32) |> 
+  select(time, C_in) |> 
+  mutate(intervention = "Social distancing",
+         model        = "Single intervention")
+toc()
+```
+
+
+```{r, warning = FALSE}
+sgl_int <- bind_rows(sim_output_b, sim_output_vacc, sim_output_test,
+                     sim_output_ct, sim_output_mob)
+
+df <- bind_rows(sim_output_syn, sgl_int)
+
+ggplot(df, aes(time, C_in/pop_val)) +
+  geom_line(aes(colour = model, linetype = model), alpha = 0.5, linewidth = 1.5) +
+  facet_wrap(~intervention) +
+  scale_linetype_manual(values = c("solid", "dotdash")) +
+  scale_colour_manual(values = c("grey70", "#0363BB")) +
+  scale_x_continuous(limits = c(0, 150)) +
+  theme_classic() +
+  labs(x = "Day", y = "Incidence rate")
+```
+
+```{r, warning = FALSE}
+ggplot(sgl_int, aes(time, C_in / pop_val)) +
+  geom_line(aes(colour = intervention)) +
+  scale_x_continuous(limits = c(0, 150)) +
+  theme_classic()
+```
+
+```{r, warning = FALSE}
+sim_output_syn |> 
+  ggplot(aes(time, C_in / pop_val)) +
+  geom_line(aes(colour = intervention)) +
+  scale_x_continuous(limits = c(0, 150)) +
+  theme_classic()
+```
+
+## Sensitivity analysis
+
+```{r}
+set.seed(19860618)
+
+n_iters <- 7000
+
+sobol_design(lower = c(par_xi    = 0,
+                       par_tau_m = 0),
+             upper = c(par_xi    = 1,
+                       par_tau_m = 60),
+             nseq = n_iters) -> c_df
+```
+
+```{r}
+plot(c_df, cex = , col = alpha("steelblue", 0.25))
+```
+
+```{r}
+mdl_sens <- read_xmile(fp_synthesis,
+                       const_list = c(bio_params,
+                                     par_zeta_0  = beta_vals[[2]] * 10,
+                                     par_rho_v   = 0.15,
+                                     par_alpha_v = 12.26,
+                                     par_phi     = phi_val,
+                                     par_iota_v  = iota_v_val,
+                                     par_iota_d  = iota_d_val,
+                                     par_delta   = delta_val,
+                                     par_rho_d   = test_cap_pars$rho_d,
+                                     par_alpha_d = test_cap_pars$alpha_d,
+                                     par_rho_k   = ct_cap_pars$rho_k,
+                                     par_alpha_k = ct_cap_pars$alpha_k,
+                                     par_tau_v   = 180),
+                       stock_list = list(Qv = Qv_0,
+                                         Qd = Qd_0,
+                                         Qk = Qk_0,
+                                         Qm = 90))
+```
+
+```{r}
+fn <- str_glue("./saved_objects/model_06.rds")
+  
+if(!file.exists(fn)) {
+  
+  tic()
+  
+  sens <- sd_sensitivity_run(mdl_sens$deSolve_components,
+                             consts_df          = c_df,
+                             start_time         = 0,
+                             stop_time          = 300,
+                             timestep           = 1 / 32,
+                             integ_method       = "euler",
+                             multicore          = TRUE,
+                             reporting_interval = 1) |> 
+    select(time, C, C_in, par_xi, par_tau_m) |> 
+      filter(time == 300) |> 
+      mutate(c   = C / pop_val)
+    
+    saveRDS(sens, fn)
+    toc()
+  } else sens <- readRDS(fn)
+```
+
+
+```{r}
+c_star_df <- sens |> mutate(c_star = c/c_ref)
+```
+
+
+```{r}
+demo_df <- sd_sensitivity_run(mdl_sens$deSolve_components, 
+                   consts_df = data.frame(par_xi = c(0.6, 0), par_tau_m = 30),
+                   start_time = 0, stop_time = 300, timestep = 1 /32, 
+                   multicore = TRUE, n_cores = 2) |> 
+  select(time, iter, Z, var_theta, C_in, k, Dk, S_to_R) |> 
+  mutate(`Contact tracing rate` = k/ Dk,
+         `Incidence rate` = C_in / pop_val,
+         `Vaccination rate` = S_to_R / pop_val) |> 
+  rename(`Testing rate` = var_theta,
+         `Mobility index` = Z) |> 
+  select(-k, -Dk, - C_in, -S_to_R) |> 
+  pivot_longer(c(-time, -iter)) |> 
+  mutate(name = factor(name, levels = c("Mobility index",
+                                        "Incidence rate",
+                                        "Vaccination rate",
+                                        "Testing rate", 
+                                        "Contact tracing rate")),
+         iter = ifelse(iter == 1, "Yes", "No"))
+```
+
+```{r, warning = FALSE, fig.height = 7, fig.width = 7}
+g <- plot_fig_09(sens_mob, c_star_df, demo_df)
+
+ggsave("./plots/Fig_09_Social_distancing.pdf", plot = g, 
+       height = 7, width = 7, device = cairo_pdf)
+
+g
+```
+
+

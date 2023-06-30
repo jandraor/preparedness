@@ -382,5 +382,85 @@ draw_fig_8D <- function(df) {
           strip.text.y = element_text(size = 7))
 }
 
+plot_fig_09 <- function(df, df2, df3) {
+
+  fig_09a <- draw_fig_9A(df)
+
+  fig_09b <- draw_fig_9B(df2)
+
+  fig_09c <- draw_fig_9C(df3)
+
+  ((fig_09a / fig_09b) | fig_09c) + plot_annotation(tag_levels = 'A')
+}
+
+draw_fig_9A <- function(df) {
+
+  ggplot(df, aes(time, C_in / pop_val)) +
+    geom_line(aes(colour = as.factor(iter))) +
+    labs(x = "Day", y = "Incidence rate") +
+    scale_colour_manual(values = c("#54B4EA", "#0363BB", "#023785")) +
+    geom_text(data = label_df, aes(x = x, y = y, label = label,
+                                   colour = as.factor(iter)),
+              parse = TRUE, size = 2.5) +
+
+    theme_classic() +
+    theme(axis.title      = element_text(colour = "grey65", size = 9),
+          axis.line       = element_line(colour = "grey90"),
+          axis.text       = element_text(colour = "grey70", size = 7),
+          axis.ticks      = element_line(colour = "grey90"),
+          legend.position = "none")
+}
+
+draw_fig_9B <- function(df) {
+
+  cols <- viridis(6, direction = -1)
+
+  ggplot(df, aes(par_xi, par_tau_m)) +
+    geom_point(aes(colour = c_star)) +
+    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
+                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
+                                      0.8001, 1),
+                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
+                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
+                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
+                           limits = c(0, 1),
+                           breaks = seq(0, 1, 0.2),
+                           name = parse(text = "c[300]^'*'")) +
+    labs(x = parse(text = "'Stringency'~(xi)"),
+         y = parse(text = "'Start of restriction'~(tau^m)")) +
+    theme_classic() +
+    theme(axis.title   = element_text(colour = "grey65", size = 9),
+          axis.line    = element_line(colour = "grey90"),
+          axis.text.x  = element_text(colour = "grey70", size = 7),
+          axis.text.y  = element_text(colour = "grey70", size = 9),
+          axis.ticks   = element_line(colour = "grey90"))
+}
+
+draw_fig_9C <- function(df) {
+
+  ggplot(df, aes(time, value)) +
+    geom_line(aes(colour = as.factor(iter), group = iter,
+                  linetype = as.factor(iter)), alpha = 0.75) +
+    scale_linetype_manual(values = c("dotdash", "solid")) +
+    facet_wrap(~name, scales = "free", ncol = 1) +
+    scale_x_continuous(limits = c(1, 300)) +
+    scale_colour_manual(values = c("grey50", "#0363BB")) +
+    geom_vline(xintercept = 180, colour = "grey75", linetype = "dotted") +
+    labs(colour = "Social distancing?", linetype = "Social distancing?",
+         x = "Day", y = "Value",
+         caption = "Dotted vertical line: Start of vaccination") +
+    theme_classic() +
+    theme(legend.position = "bottom",
+          axis.title      = element_text(colour = "grey65", size = 9),
+          axis.line       = element_line(colour = "grey90"),
+          axis.text       = element_text(colour = "grey70", size = 7),
+          axis.ticks      = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80", linewidth = 0.5),
+          strip.text = element_text(size = 7,
+                                    margin = margin(b = 0.1, t = 0.1,
+                                                    unit = "cm")),
+          plot.caption = element_text(colour = "grey75", size = 4.5))
+}
+
 
 

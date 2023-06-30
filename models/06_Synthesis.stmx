@@ -3,14 +3,14 @@
 	<header>
 		<smile version="1.0" namespace="std, isee"/>
 		<name>06_Synthesis</name>
-		<uuid>0ec071c9-93b4-4c2f-9a6c-708c63a61196</uuid>
+		<uuid>10d526ce-b9f8-458c-9d99-84379d39a4a1</uuid>
 		<vendor>isee systems, inc.</vendor>
 		<product version="3.0" isee:build_number="2658" isee:saved_by_v1="true" lang="en">Stella Architect</product>
 	</header>
 	<sim_specs isee:sim_duration="1.5" isee:run_prefix="Run" isee:simulation_delay="0.005" isee:restore_on_start="false" method="Euler" time_units="Days" isee:instantaneous_flows="false" isee:ignore_module_errors="false" isee:loop_scores="false" isee:loop_exhaustive_allowed="1000">
 		<start>0</start>
 		<stop>300</stop>
-		<dt reciprocal="true">128</dt>
+		<dt reciprocal="true">32</dt>
 	</sim_specs>
 	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" isee:design="Deluxe Prev-Next Blue Green Pastel" isee:design_custom="false" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
 	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" model_stops_when_players_drop="false" observer_start_page="home_page" enabled="false"/>
@@ -64,13 +64,12 @@
 			<eqn>1</eqn>
 			<alias>dmnl</alias>
 			<alias>unitless</alias>
-			<alias>fraction</alias>
 		</unit>
 	</model_units>
 	<model>
 		<variables>
 			<stock name="S">
-				<eqn>N * par_iota - P0</eqn>
+				<eqn>N * par_iota_v - P0</eqn>
 				<inflow>Sq_to_S</inflow>
 				<outflow>S_to_E</outflow>
 				<outflow>S_to_Sq</outflow>
@@ -106,8 +105,9 @@
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
 				<inflow>Id_to_R</inflow>
-				<inflow>I_i_to_R</inflow>
 				<inflow>S_to_R</inflow>
+				<inflow>Aq_to_R</inflow>
+				<inflow>Iq_to_R</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="S to E">
@@ -258,38 +258,25 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day</units>
 			</flow>
 			<flow name="S to Sq">
-				<eqn>var_mu_q * S</eqn>
+				<eqn>var_mu_s * S</eqn>
 				<units>People/day</units>
 			</flow>
 			<flow name="S to E i">
 				<eqn>var_mu_i * S</eqn>
 				<units>People/day</units>
 			</flow>
-			<stock name="E i">
+			<stock name="Eq">
 				<eqn>0</eqn>
 				<inflow>S_to_E_i</inflow>
 				<inflow>Sh_to_Ei</inflow>
-				<outflow>E_i_to_I_i</outflow>
+				<outflow>Eq_to_Iq</outflow>
+				<outflow>Eq_to_Aq</outflow>
 				<units>People</units>
 			</stock>
-			<flow name="E i to I i">
-				<eqn>par_sigma * E_i</eqn>
-				<units>People/day</units>
+			<flow name="Eq to Iq">
+				<eqn>par_omega * par_sigma * Eq</eqn>
+				<units>people/day</units>
 			</flow>
-			<stock name="I i">
-				<eqn>0</eqn>
-				<inflow>E_i_to_I_i</inflow>
-				<outflow>I_i_to_R</outflow>
-				<units>People</units>
-			</stock>
-			<flow name="I i to R">
-				<eqn>par_kappa * I_i</eqn>
-				<units>People/day</units>
-			</flow>
-			<aux name="var mu i">
-				<eqn>k * par_upsilon / N</eqn>
-				<units>1/day</units>
-			</aux>
 			<aux name="var zeta t">
 				<eqn>par_zeta_0 * Z</eqn>
 				<units>1/day</units>
@@ -299,48 +286,8 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<eqn>0.1</eqn>
 				<units>Dimensionless</units>
 			</aux>
-			<stock name="Qk">
-				<doc>Daily capacity to track close contacts of detected infectious individuals.  Since T was used for denoting testing, we use the letter F from &quot;finding&quot;.</doc>
-				<eqn>650</eqn>
-				<inflow>Change_Qk</inflow>
-				<units>people/day</units>
-			</stock>
-			<flow name="Change Qk">
-				<doc>Adjust contact tracing capacity</doc>
-				<eqn>par_rho_k * Qk * (1 - (Qk/par_alpha_k))</eqn>
-				<units>People/Day/Days</units>
-			</flow>
-			<aux name="par alpha k">
-				<doc>Long-term contact tracing capacity.</doc>
-				<eqn>3250</eqn>
-				<units>people/day</units>
-			</aux>
-			<aux name="par rho k">
-				<doc>Unconstrained growth of contact tracing capacity.</doc>
-				<eqn>0.01</eqn>
-				<units>1/day</units>
-			</aux>
-			<aux name="Dk">
-				<doc>Contact tracing demand</doc>
-				<eqn>var_zeta_t * Pd</eqn>
-				<units>People/day</units>
-			</aux>
-			<aux name="k">
-				<doc>Number of contacts traced people given supply &amp; demand.</doc>
-				<eqn>MIN(Dk,  contact_tracing_supply)</eqn>
-				<units>people/day</units>
-			</aux>
-			<aux name="contact tracing\nsupply">
-				<doc>Contact tracing supply</doc>
-				<eqn>Qk</eqn>
-				<units>people/day</units>
-			</aux>
-			<aux name="var mu q">
-				<eqn>k * (1 - par_upsilon) / N</eqn>
-				<units>1/day</units>
-			</aux>
 			<aux name="lambda Pd">
-				<eqn>par_upsilon *(Dk - k) / N</eqn>
+				<eqn>par_upsilon * (var_zeta_t - var_zeta_k) * Pd / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="lambda P">
@@ -355,8 +302,8 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<eqn>B * I / N</eqn>
 				<units>1/day</units>
 			</aux>
-			<aux name="lambda Ii">
-				<eqn>(par_omega + (1 - par_omega) * par_eta) * (1 - par_iota_d) * B  *I_i /N</eqn>
+			<aux name="lambda Iq">
+				<eqn> (1 - par_iota_d) * B  * Iq /N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par iota d">
@@ -389,7 +336,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>Dimensionless</units>
 			</stock>
 			<flow name="Decrease Qm">
-				<eqn>Qm_supply * uc</eqn>
+				<eqn>Qm_supply / uc</eqn>
 				<units>1/day</units>
 			</flow>
 			<aux name="Qm supply">
@@ -415,14 +362,15 @@ ELSE 0</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="uc">
+				<doc>Unit converter</doc>
 				<eqn>1</eqn>
-				<units>1/day</units>
+				<units>day</units>
 			</aux>
 			<flow name="S to R">
 				<eqn>par_phi * var_psi * S</eqn>
 				<units>people/day</units>
 			</flow>
-			<aux name="par iota">
+			<aux name="par iota v">
 				<eqn>0.6</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -499,13 +447,13 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</aux>
 			<aux name="lambda">
-				<eqn>lambda_A + lambda_I + lambda_Id + lambda_Ii + lambda_P + lambda_Pd</eqn>
+				<eqn>lambda_A + lambda_Aq + lambda_I + lambda_Id + lambda_Iq + lambda_P + lambda_Pd + lambda_Pq</eqn>
 				<isee:summing/>
 				<units>1/day</units>
 			</aux>
 			<stock name="Sh">
 				<doc>Susceptible individual who refuse to get a vaccine</doc>
-				<eqn>N * (1-  par_iota)</eqn>
+				<eqn>N * (1-  par_iota_v)</eqn>
 				<inflow>Shq_to_Sh</inflow>
 				<outflow>Sh_to_Ei</outflow>
 				<outflow>Sh_to_E</outflow>
@@ -529,17 +477,107 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>People</units>
 			</stock>
 			<flow name="Sh to Shq">
-				<eqn>var_mu_q * Sh</eqn>
+				<eqn>var_mu_s * Sh</eqn>
 				<units>people/day</units>
 			</flow>
 			<flow name="Shq to Sh">
 				<eqn>Shq / (1 / par_sigma + 1 / par_gamma + 1 / par_nu)</eqn>
 				<units>people/day</units>
 			</flow>
-			<aux name="N val">
-				<eqn>A + E + E_i + I + I_i + Id + P + Pd + R + S + Sh + Shq + Sq + Sv</eqn>
-				<isee:summing/>
+			<stock name="Pq">
+				<eqn>0</eqn>
+				<inflow>Eq_to_Iq</inflow>
+				<outflow>Pq_to_Iq</outflow>
 				<units>People</units>
+			</stock>
+			<flow name="Iq to R">
+				<eqn>par_gamma * Iq</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="Eq to Aq">
+				<eqn>(1 - par_omega) * par_sigma * Eq</eqn>
+				<units>people/day</units>
+			</flow>
+			<stock name="Aq">
+				<eqn>0</eqn>
+				<inflow>Eq_to_Aq</inflow>
+				<outflow>Aq_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="Iq">
+				<eqn>0</eqn>
+				<inflow>Pq_to_Iq</inflow>
+				<outflow>Iq_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Aq to R">
+				<eqn>par_kappa *Aq</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="Pq to Iq">
+				<eqn>par_nu * Pq</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="var mu i">
+				<doc>Rate at which infected susceptible individuals are contact traced.</doc>
+				<eqn>par_upsilon * var_zeta_k * Pd  / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par zeta">
+				<eqn>10.86957</eqn>
+				<units>1/day</units>
+			</aux>
+			<stock name="Qk">
+				<doc>Daily capacity to track close contacts of detected infectious individuals. </doc>
+				<eqn>0.05331</eqn>
+				<inflow>Change_Qk</inflow>
+				<units>people/day</units>
+			</stock>
+			<flow name="Change Qk">
+				<doc>Adjust contact tracing capacity</doc>
+				<eqn>par_rho_k * Qk * (1 - (Qk/par_alpha_k))</eqn>
+				<units>people/day/Days</units>
+			</flow>
+			<aux name="par alpha k">
+				<doc>Long-term contact tracing capacity.</doc>
+				<eqn>100</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="par rho k">
+				<doc>Unconstrained growth of contact tracing capacity.</doc>
+				<eqn>0.02594023 * 10</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="Dk">
+				<doc>Contact tracing demand</doc>
+				<eqn>par_zeta * Pd</eqn>
+				<units>People/day</units>
+			</aux>
+			<aux name="k">
+				<doc>Number of contact-traced people given supply &amp; demand.</doc>
+				<eqn>MIN(Dk,  contact_tracing_supply)</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="contact tracing\nsupply">
+				<doc>Contact tracing supply</doc>
+				<eqn>Qk * N / scaler</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="var mu s">
+				<doc>Rate at which non-infected susceptible individuals are contact traced.</doc>
+				<eqn>(1 - par_upsilon) * var_zeta_k * Pd / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="var zeta k">
+				<eqn>IF Pd = 0
+THEN 0
+ELSE (k/Pd)</eqn>
+			</aux>
+			<aux name="lambda Aq">
+				<eqn>(1 - par_iota_d) * B * par_eta * Aq / N</eqn>
+			</aux>
+			<aux name="lambda Pq">
+				<eqn>(1 - par_iota_d) * B * Pq / N</eqn>
 			</aux>
 		</variables>
 		<views>
@@ -588,7 +626,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
 				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
 			</style>
-			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="3" isee:page_rows="4" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="3" isee:page_rows="4" isee:scroll_x="1.42857" isee:scroll_y="160.714" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
 				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
 					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
 						<shape type="rectangle" width="45" height="35"/>
@@ -629,7 +667,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="454.285" y="575.428" name="E"/>
 				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="580.285" y="575.428" name="P"/>
 				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="704.285" y="575.428" name="I"/>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="848.285" y="575.428" name="R"/>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="891.142" y="571.821" name="R"/>
 				<flow color="#797979" font_color="#797979" x="382.285" y="575.428" name="S to E">
 					<pts>
 						<pt x="332.785" y="575.428"/>
@@ -648,31 +686,31 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 						<pt x="681.785" y="575.428"/>
 					</pts>
 				</flow>
-				<flow color="#797979" font_color="#797979" x="776.285" y="575.428" name="I to R">
+				<flow color="#797979" font_color="#797979" x="797.714" y="575.428" name="I to R">
 					<pts>
 						<pt x="726.785" y="575.428"/>
-						<pt x="825.785" y="575.428"/>
+						<pt x="868.642" y="575.428"/>
 					</pts>
 				</flow>
 				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="645.285" y="686.428" name="A"/>
-				<flow color="#797979" font_color="#797979" x="529.964" y="675.286" width="18" height="18" name="E to A">
+				<flow color="#797979" font_color="#797979" x="538.964" y="684.286" name="E to A">
 					<pts>
 						<pt x="467.142" y="592.928"/>
 						<pt x="467.142" y="684.286"/>
 						<pt x="622.785" y="684.286"/>
 					</pts>
 				</flow>
-				<flow color="#797979" font_color="#797979" x="759.893" y="687.143" name="A to R">
+				<flow color="#797979" font_color="#797979" x="781.321" y="687.143" name="A to R">
 					<pts>
 						<pt x="667.785" y="687.143"/>
-						<pt x="840" y="687.143"/>
-						<pt x="840" y="592.928"/>
+						<pt x="882.857" y="687.143"/>
+						<pt x="882.857" y="589.321"/>
 					</pts>
 				</flow>
 				<aux color="#797979" font_color="#797979" x="750.66" y="517.428" width="51.25" height="14" name="par gamma">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="1" angle="270">
+				<connector uid="1" angle="292.791">
 					<from>par_gamma</from>
 					<to>I_to_R</to>
 				</connector>
@@ -720,7 +758,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<aux color="#797979" font_color="#797979" x="698.16" y="715.428" width="46.25" height="14" name="par kappa">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="13" angle="42.4259">
+				<connector uid="13" angle="30.444">
 					<from>par_kappa</from>
 					<to>A_to_R</to>
 				</connector>
@@ -760,14 +798,14 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 						<pt x="681.785" y="482.928"/>
 					</pts>
 				</flow>
-				<flow color="#919191" font_color="#919191" label_side="top" x="785.107" y="483.428" name="Id to R">
+				<flow color="#919191" font_color="#919191" label_side="top" x="806.535" y="483.428" name="Id to R">
 					<pts>
 						<pt x="726.785" y="483.428"/>
-						<pt x="831.428" y="483.428"/>
-						<pt x="831.428" y="557.928"/>
+						<pt x="874.285" y="483.428"/>
+						<pt x="874.285" y="554.321"/>
 					</pts>
 				</flow>
-				<connector uid="23" angle="77.8575">
+				<connector uid="23" angle="53.5798">
 					<from>par_gamma</from>
 					<to>Id_to_R</to>
 				</connector>
@@ -807,7 +845,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>E</from>
 					<to>E_to_Pd</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="230.714" y="264.143" name="var theta"/>
+				<aux color="#797979" font_color="#797979" x="231.428" y="221.286" name="var theta"/>
 				<connector uid="35" angle="297.674">
 					<from>
 						<alias uid="36"/>
@@ -839,8 +877,8 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>Qd</from>
 					<to>Change_Qd</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="230.714" y="182.143" name="testing supply"/>
-				<aux color="#797979" font_color="#797979" label_side="bottom" x="151.429" y="263.429" name="Dd"/>
+				<aux color="#797979" font_color="#797979" x="231.428" y="139.286" name="testing supply"/>
+				<aux color="#797979" font_color="#797979" label_side="bottom" x="152.143" y="220.572" name="Dd"/>
 				<connector uid="72" angle="333.335">
 					<from>
 						<alias uid="67"/>
@@ -867,12 +905,12 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>testing_supply</from>
 					<to>var_theta</to>
 				</connector>
-				<connector uid="77" angle="269.253">
+				<connector uid="77" angle="269.386">
 					<from>Qd</from>
 					<to>testing_supply</to>
 				</connector>
-				<stock color="black" font_color="black" label_side="center" x="131.429" y="572.571" name="Sq"/>
-				<flow color="black" font_color="black" label_side="bottom" x="216.786" y="533.571" name="Sq to S">
+				<stock color="#797979" font_color="#797979" label_side="center" x="131.429" y="572.571" name="Sq"/>
+				<flow color="#797979" font_color="#797979" label_side="bottom" x="216.786" y="533.571" name="Sq to S">
 					<pts>
 						<pt x="142.143" y="555.071"/>
 						<pt x="142.143" y="533.571"/>
@@ -880,7 +918,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 						<pt x="291.429" y="557.928"/>
 					</pts>
 				</flow>
-				<flow color="black" font_color="black" x="220.857" y="580.678" name="S to Sq">
+				<flow color="#797979" font_color="#797979" x="220.857" y="580.678" name="S to Sq">
 					<pts>
 						<pt x="287.785" y="580.678"/>
 						<pt x="153.929" y="580.678"/>
@@ -908,49 +946,30 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>Sq_to_S</to>
 				</connector>
-				<flow color="black" font_color="black" label_side="top" x="363.732" y="261.643" name="S to E i">
+				<flow color="#797979" font_color="#797979" label_side="top" x="363.732" y="261.643" name="S to E i">
 					<pts>
 						<pt x="311.429" y="557.928"/>
 						<pt x="311.429" y="261.643"/>
 						<pt x="428.035" y="261.643"/>
 					</pts>
 				</flow>
-				<stock color="black" font_color="black" label_side="center" x="450.535" y="261.643" name="E i"/>
-				<flow color="black" font_color="black" label_side="top" x="528.482" y="264.179" name="E i to I i">
+				<stock color="black" font_color="black" label_side="center" x="450.535" y="261.643" name="Eq"/>
+				<flow color="#797979" font_color="#797979" label_side="top" x="528.178" y="379.286" name="Eq to Iq">
 					<pts>
-						<pt x="473.035" y="264.179"/>
-						<pt x="583.928" y="264.179"/>
+						<pt x="473.035" y="276.893"/>
+						<pt x="513.571" y="276.893"/>
+						<pt x="513.571" y="379.286"/>
+						<pt x="554.785" y="379.286"/>
 					</pts>
 				</flow>
-				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="583.928" y="245.786" width="45" height="35" name="I i"/>
-				<flow color="black" font_color="black" label_side="top" x="747.964" y="265" name="I i to R">
-					<pts>
-						<pt x="628.928" y="265"/>
-						<pt x="855" y="265"/>
-						<pt x="855" y="557.928"/>
-					</pts>
-				</flow>
-				<connector uid="92" angle="35.2759">
-					<from>E_i</from>
-					<to>E_i_to_I_i</to>
-				</connector>
-				<connector uid="93" angle="41.3234">
-					<from>I_i</from>
-					<to>I_i_to_R</to>
-				</connector>
-				<connector uid="94" angle="121.439">
-					<from>
-						<alias uid="95"/>
-					</from>
-					<to>I_i_to_R</to>
+				<connector uid="92" angle="350.946">
+					<from>Eq</from>
+					<to>Eq_to_Iq</to>
 				</connector>
 				<connector uid="96" angle="111.354">
 					<from>S</from>
 					<to>S_to_E_i</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="166.732" y="916.881" width="38.25" height="14" name="var mu i">
-					<shape type="name_only"/>
-				</aux>
 				<aux color="#797979" font_color="#797979" x="1461.28" y="450.428" width="43.25" height="14" name="var zeta t">
 					<shape type="name_only"/>
 				</aux>
@@ -965,109 +984,6 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>par_upsilon</from>
 					<to>B</to>
 				</connector>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="296.238" y="977.5" name="Qk"/>
-				<flow color="#797979" background="white" font_color="#797979" x="199.405" y="977.5" name="Change Qk">
-					<pts>
-						<pt x="113.071" y="977.5"/>
-						<pt x="273.738" y="977.5"/>
-					</pts>
-				</flow>
-				<aux color="#797979" font_color="#797979" label_side="top" x="223.488" y="1017.14" width="50.25" height="14" name="par alpha k">
-					<shape type="name_only"/>
-				</aux>
-				<aux color="#797979" font_color="#797979" x="118.399" y="1003.14" width="41.25" height="14" name="par rho k">
-					<shape type="name_only"/>
-				</aux>
-				<connector uid="104" angle="136.535">
-					<from>par_alpha_k</from>
-					<to>Change_Qk</to>
-				</connector>
-				<connector uid="105" angle="28.3943">
-					<from>par_rho_k</from>
-					<to>Change_Qk</to>
-				</connector>
-				<connector uid="106" angle="155.532">
-					<from>Qk</from>
-					<to>Change_Qk</to>
-				</connector>
-				<aux color="#797979" font_color="#797979" label_side="right" label_angle="315" x="80.3099" y="804.262" width="19" height="19" name="Dk"/>
-				<aux color="#797979" font_color="#797979" label_side="right" label_angle="45" x="222.643" y="842.476" width="11.25" height="14" name="k">
-					<shape type="name_only"/>
-				</aux>
-				<connector uid="107" angle="345.536">
-					<from>Dk</from>
-					<to>k</to>
-				</connector>
-				<aux color="#797979" font_color="#797979" label_side="right" label_angle="315" x="266.256" y="869.452" width="64.25" height="26" name="contact tracing\nsupply">
-					<shape type="name_only"/>
-				</aux>
-				<connector uid="120" angle="88.7085">
-					<from>Qk</from>
-					<to>contact_tracing_supply</to>
-				</connector>
-				<connector uid="121" angle="154.811">
-					<from>contact_tracing_supply</from>
-					<to>k</to>
-				</connector>
-				<connector uid="131" angle="270">
-					<from>
-						<alias uid="130"/>
-					</from>
-					<to>Dk</to>
-				</connector>
-				<connector uid="132" angle="0">
-					<from>
-						<alias uid="133"/>
-					</from>
-					<to>Dk</to>
-				</connector>
-				<connector uid="134" angle="240.317">
-					<from>k</from>
-					<to>var_mu_i</to>
-				</connector>
-				<connector uid="135" angle="0">
-					<from>
-						<alias uid="136"/>
-					</from>
-					<to>var_mu_i</to>
-				</connector>
-				<connector uid="137" angle="270">
-					<from>
-						<alias uid="138"/>
-					</from>
-					<to>var_mu_i</to>
-				</connector>
-				<connector uid="139" angle="219.034">
-					<from>
-						<alias uid="140"/>
-					</from>
-					<to>S_to_E_i</to>
-				</connector>
-				<aux color="#797979" font_color="#797979" x="98.8099" y="863.31" width="41.25" height="14" name="var mu q">
-					<shape type="name_only"/>
-				</aux>
-				<connector uid="141" angle="90">
-					<from>
-						<alias uid="136"/>
-					</from>
-					<to>var_mu_q</to>
-				</connector>
-				<connector uid="142" angle="180">
-					<from>
-						<alias uid="138"/>
-					</from>
-					<to>var_mu_q</to>
-				</connector>
-				<connector uid="143" angle="190.837">
-					<from>k</from>
-					<to>var_mu_q</to>
-				</connector>
-				<connector uid="145" angle="31.2253">
-					<from>
-						<alias uid="144"/>
-					</from>
-					<to>S_to_Sq</to>
-				</connector>
 				<aux color="#797979" font_color="#797979" x="1027.52" y="381.714" width="49.25" height="14" name="lambda Pd">
 					<shape type="name_only"/>
 				</aux>
@@ -1077,21 +993,9 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>lambda_Pd</to>
 				</connector>
-				<connector uid="152" angle="328.017">
+				<connector uid="152" angle="328.018">
 					<from>
 						<alias uid="153"/>
-					</from>
-					<to>lambda_Pd</to>
-				</connector>
-				<connector uid="156" angle="270">
-					<from>
-						<alias uid="157"/>
-					</from>
-					<to>lambda_Pd</to>
-				</connector>
-				<connector uid="158" angle="180.917">
-					<from>
-						<alias uid="159"/>
 					</from>
 					<to>lambda_Pd</to>
 				</connector>
@@ -1152,41 +1056,35 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>lambda_I</to>
 				</connector>
-				<connector uid="185" angle="24.5989">
+				<connector uid="185" angle="20.3563">
 					<from>
 						<alias uid="186"/>
 					</from>
 					<to>lambda_I</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="1043.87" y="609.857" width="42.25" height="14" name="lambda Ii">
+				<aux color="#797979" font_color="#797979" x="1038.8" y="617" width="45.25" height="14" name="lambda Iq">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="189" angle="183.741">
-					<from>
-						<alias uid="190"/>
-					</from>
-					<to>lambda_Ii</to>
-				</connector>
 				<connector uid="191" angle="1.13536">
 					<from>
 						<alias uid="192"/>
 					</from>
-					<to>lambda_Ii</to>
+					<to>lambda_Iq</to>
 				</connector>
 				<connector uid="197" angle="90">
 					<from>
 						<alias uid="198"/>
 					</from>
-					<to>lambda_Ii</to>
+					<to>lambda_Iq</to>
 				</connector>
 				<aux color="#797979" font_color="#797979" x="1034.8" y="497.571" width="43.25" height="14" name="par iota d">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="195" angle="38.6837">
+				<connector uid="195" angle="266.239">
 					<from>
 						<alias uid="196"/>
 					</from>
-					<to>lambda_Ii</to>
+					<to>lambda_Iq</to>
 				</connector>
 				<connector uid="201" angle="90">
 					<from>par_iota_d</from>
@@ -1221,23 +1119,11 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>N</from>
 					<to>lambda_P</to>
 				</connector>
-				<connector uid="193" angle="146.481">
-					<from>
-						<alias uid="194"/>
-					</from>
-					<to>lambda_Ii</to>
-				</connector>
-				<connector uid="215" angle="225">
-					<from>
-						<alias uid="216"/>
-					</from>
-					<to>lambda_Ii</to>
-				</connector>
-				<connector uid="217" angle="110.403">
+				<connector uid="217" angle="248.435">
 					<from>
 						<alias uid="218"/>
 					</from>
-					<to>E_i_to_I_i</to>
+					<to>Eq_to_Iq</to>
 				</connector>
 				<aux color="#797979" font_color="#797979" label_side="top" x="1308.55" y="348.071" width="26.25" height="14" name="tau Z">
 					<shape type="name_only"/>
@@ -1303,26 +1189,26 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>uc</from>
 					<to>Decrease_Qm</to>
 				</connector>
-				<flow color="black" font_color="black" x="579.285" y="826.571" name="S to R">
+				<flow color="#797979" font_color="#797979" x="600.714" y="826.571" name="S to R">
 					<pts>
 						<pt x="299.285" y="592.928"/>
 						<pt x="299.285" y="826.571"/>
-						<pt x="859.285" y="826.571"/>
-						<pt x="859.285" y="592.928"/>
+						<pt x="902.142" y="826.571"/>
+						<pt x="902.142" y="589.321"/>
 					</pts>
 				</flow>
-				<aux color="#797979" font_color="#797979" x="565.107" y="899.429" width="36.25" height="14" name="par iota">
+				<aux color="#797979" font_color="#797979" x="230.911" y="635.785" width="43.25" height="14" name="par iota v">
 					<shape type="name_only"/>
 				</aux>
 				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="388.244" y="712.928" name="Sv"/>
-				<flow color="black" font_color="black" x="434.586" y="711.428" name="Sv to E">
+				<flow color="#797979" font_color="#797979" x="434.586" y="711.428" name="Sv to E">
 					<pts>
 						<pt x="410.744" y="711.428"/>
 						<pt x="446.428" y="711.428"/>
 						<pt x="446.428" y="592.928"/>
 					</pts>
 				</flow>
-				<flow color="black" font_color="black" x="336.158" y="711.928" name="S to Sv">
+				<flow color="#797979" font_color="#797979" x="336.158" y="711.928" name="S to Sv">
 					<pts>
 						<pt x="318.571" y="592.928"/>
 						<pt x="318.571" y="711.928"/>
@@ -1336,14 +1222,14 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<aux color="#797979" font_color="#797979" label_side="right" x="469.143" y="899.429" width="32.25" height="14" name="var psi">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="230" angle="40.3444">
+				<connector uid="230" angle="34.6731">
 					<from>var_psi</from>
 					<to>S_to_R</to>
 				</connector>
 				<aux color="#797979" font_color="#797979" label_side="top" x="473.035" y="798.286" width="33.25" height="14" name="par phi">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="231" angle="346.64">
+				<connector uid="231" angle="349.15">
 					<from>par_phi</from>
 					<to>S_to_R</to>
 				</connector>
@@ -1415,7 +1301,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>par_zeta_0</from>
 					<to>var_zeta_t</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="270.785" y="175.143" width="30.25" height="14" name="scaler">
+				<aux color="#797979" font_color="#797979" x="271.499" y="132.286" width="30.25" height="14" name="scaler">
 					<shape type="name_only"/>
 				</aux>
 				<connector uid="252" angle="180">
@@ -1428,7 +1314,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>testing_supply</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="270.804" y="257.143" width="41.25" height="14" name="par delta">
+				<aux color="#797979" font_color="#797979" x="258.661" y="214.286" width="41.25" height="14" name="par delta">
 					<shape type="name_only"/>
 				</aux>
 				<connector uid="255" angle="180">
@@ -1458,7 +1344,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>S</from>
 					<to>Vaccine_demand</to>
 				</connector>
-				<connector uid="260" angle="174.789">
+				<connector uid="260" angle="165.328">
 					<from>S</from>
 					<to>S_to_Sq</to>
 				</connector>
@@ -1474,7 +1360,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>Vaccine_supply</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="373.285" y="630.286" width="18" height="18" name="lambda"/>
+				<aux color="#FF2600" font_color="#FF2600" x="382.285" y="639.286" name="lambda"/>
 				<connector uid="265" angle="90">
 					<from>lambda</from>
 					<to>S_to_E</to>
@@ -1543,7 +1429,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>Sh</from>
 					<to>Sh_to_Ei</to>
 				</connector>
-				<connector uid="283" angle="43.4518">
+				<connector uid="283" angle="41.7211">
 					<from>
 						<alias uid="284"/>
 					</from>
@@ -1553,21 +1439,9 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<from>Sh</from>
 					<to>Sh_to_E</to>
 				</connector>
-				<connector uid="287" angle="227.506">
-					<from>
-						<alias uid="286"/>
-					</from>
-					<to>Sh_to_Shq</to>
-				</connector>
-				<connector uid="288" angle="110.503">
+				<connector uid="288" angle="117.947">
 					<from>Sh</from>
 					<to>Sh_to_Shq</to>
-				</connector>
-				<connector uid="289" angle="297.79">
-					<from>
-						<alias uid="140"/>
-					</from>
-					<to>Sh_to_Ei</to>
 				</connector>
 				<stacked_container uid="290" x="1250" y="1142.14">
 					<graph width="350" height="250" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
@@ -1576,13 +1450,8 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 						</plot>
 					</graph>
 				</stacked_container>
-				<aux x="867.071" y="1242.86" name="N val"/>
 				<stacked_container uid="293" x="1125.71" y="1484.29">
-					<graph width="350" height="250" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
-						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
-							<entity name="N_val"/>
-						</plot>
-					</graph>
+					<graph width="350" height="250" type="time_series" isee:points_only="true" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true"/>
 				</stacked_container>
 				<connector uid="297" angle="33.4741">
 					<from>
@@ -1608,6 +1477,327 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					</from>
 					<to>C_in</to>
 				</connector>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="577.285" y="379.678" name="Pq"/>
+				<flow color="#797979" font_color="#797979" label_side="top" x="812.053" y="384.339" name="Iq to R">
+					<pts>
+						<pt x="724.249" y="384.339"/>
+						<pt x="887.857" y="384.339"/>
+						<pt x="887.857" y="554.321"/>
+					</pts>
+				</flow>
+				<flow color="#797979" font_color="#797979" label_side="top" x="557.553" y="261.643" name="Eq to Aq">
+					<pts>
+						<pt x="473.035" y="261.643"/>
+						<pt x="642.071" y="261.643"/>
+					</pts>
+				</flow>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="642.071" y="244.143" width="45" height="35" name="Aq"/>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="701.749" y="378.214" name="Iq"/>
+				<connector uid="305" angle="30.7248">
+					<from>Iq</from>
+					<to>Iq_to_R</to>
+				</connector>
+				<flow color="#919191" font_color="#919191" x="801.678" y="259.428" name="Aq to R">
+					<pts>
+						<pt x="687.071" y="259.428"/>
+						<pt x="904.286" y="259.428"/>
+						<pt x="904.286" y="554.321"/>
+					</pts>
+				</flow>
+				<connector uid="306" angle="41.1006">
+					<from>Aq</from>
+					<to>Aq_to_R</to>
+				</connector>
+				<connector uid="307" angle="131.49">
+					<from>
+						<alias uid="308"/>
+					</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<connector uid="309" angle="85.5059">
+					<from>
+						<alias uid="218"/>
+					</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<connector uid="310" angle="219.472">
+					<from>
+						<alias uid="308"/>
+					</from>
+					<to>Eq_to_Iq</to>
+				</connector>
+				<connector uid="311" angle="9.55482">
+					<from>Eq</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<connector uid="312" angle="221.236">
+					<from>
+						<alias uid="313"/>
+					</from>
+					<to>Iq_to_R</to>
+				</connector>
+				<flow color="#797979" font_color="#797979" x="639.517" y="379.678" name="Pq to Iq">
+					<pts>
+						<pt x="599.785" y="379.678"/>
+						<pt x="679.249" y="379.678"/>
+					</pts>
+				</flow>
+				<connector uid="315" angle="244.243">
+					<from>
+						<alias uid="314"/>
+					</from>
+					<to>Pq_to_Iq</to>
+				</connector>
+				<connector uid="316" angle="36.0844">
+					<from>Pq</from>
+					<to>Pq_to_Iq</to>
+				</connector>
+				<connector uid="317" angle="219.95">
+					<from>
+						<alias uid="318"/>
+					</from>
+					<to>Aq_to_R</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="111.453" y="1200.28" width="38.25" height="14" name="var mu i">
+					<shape type="name_only"/>
+				</aux>
+				<stock color="#0433FF" font_color="#0433FF" label_side="center" x="418.096" y="1214.78" name="Qk"/>
+				<flow color="#0433FF" background="white" font_color="#0433FF" x="321.262" y="1214.78" name="Change Qk">
+					<pts>
+						<pt x="234.929" y="1214.78"/>
+						<pt x="395.596" y="1214.78"/>
+					</pts>
+				</flow>
+				<aux color="#797979" font_color="#797979" label_side="top" x="345.346" y="1246.28" width="50.25" height="14" name="par alpha k">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" x="238.447" y="1232.28" width="41.25" height="14" name="par rho k">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="319" angle="141.961">
+					<from>par_alpha_k</from>
+					<to>Change_Qk</to>
+				</connector>
+				<connector uid="320" angle="21.502">
+					<from>par_rho_k</from>
+					<to>Change_Qk</to>
+				</connector>
+				<connector uid="321" angle="155.532">
+					<from>Qk</from>
+					<to>Change_Qk</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" label_side="bottom" x="371.929" y="1039.71" width="19" height="19" name="Dk"/>
+				<aux color="#797979" font_color="#797979" label_side="right" label_angle="45" x="246.304" y="1042.05" width="11.25" height="14" name="k">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" label_side="right" label_angle="315" x="219.804" y="1098.17" width="64.25" height="26" name="contact tracing\nsupply">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="322" angle="148.053">
+					<from>Qk</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<connector uid="323" angle="90">
+					<from>contact_tracing_supply</from>
+					<to>k</to>
+				</connector>
+				<connector uid="324" angle="270">
+					<from>
+						<alias uid="325"/>
+					</from>
+					<to>Dk</to>
+				</connector>
+				<connector uid="326" angle="180">
+					<from>par_zeta</from>
+					<to>Dk</to>
+				</connector>
+				<connector uid="327" angle="305.447">
+					<from>
+						<alias uid="328"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="110.453" y="995.142" width="40.25" height="14" name="var mu s">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="329" angle="53.0712">
+					<from>
+						<alias uid="328"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="330" angle="0">
+					<from>
+						<alias uid="331"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="332" angle="180">
+					<from>
+						<alias uid="333"/>
+					</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<aux x="229.304" y="988.285" width="45.25" height="14" name="var zeta k">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="334" angle="90">
+					<from>k</from>
+					<to>var_zeta_k</to>
+				</connector>
+				<connector uid="335" angle="180">
+					<from>
+						<alias uid="325"/>
+					</from>
+					<to>var_zeta_k</to>
+				</connector>
+				<connector uid="336" angle="240.212">
+					<from>var_zeta_k</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="337" angle="270">
+					<from>
+						<alias uid="338"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="339" angle="183.234">
+					<from>var_zeta_k</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="340" angle="90">
+					<from>
+						<alias uid="338"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="341" angle="179.926">
+					<from>Dk</from>
+					<to>k</to>
+				</connector>
+				<connector uid="342" angle="90">
+					<from>
+						<alias uid="343"/>
+					</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<connector uid="344" angle="0">
+					<from>
+						<alias uid="345"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="434.161" y="1042.21" width="38.25" height="14" name="par zeta">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="346" angle="181.326">
+					<from>
+						<alias uid="347"/>
+					</from>
+					<to>lambda_Iq</to>
+				</connector>
+				<connector uid="348" angle="32.5353">
+					<from>
+						<alias uid="349"/>
+					</from>
+					<to>S_to_Sq</to>
+				</connector>
+				<connector uid="350" angle="141.871">
+					<from>
+						<alias uid="351"/>
+					</from>
+					<to>S_to_E_i</to>
+				</connector>
+				<connector uid="352" angle="326.675">
+					<from>
+						<alias uid="353"/>
+					</from>
+					<to>Sh_to_Shq</to>
+				</connector>
+				<connector uid="354" angle="320.983">
+					<from>
+						<alias uid="351"/>
+					</from>
+					<to>Sh_to_Ei</to>
+				</connector>
+				<connector uid="355" angle="180">
+					<from>
+						<alias uid="356"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<connector uid="359" angle="233.726">
+					<from>
+						<alias uid="360"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<aux x="1278.44" y="664.857" width="48.25" height="14" name="lambda Aq">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="361" angle="176.698">
+					<from>
+						<alias uid="362"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="363" angle="32.4993">
+					<from>
+						<alias uid="364"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="365" angle="88.6573">
+					<from>
+						<alias uid="366"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="367" angle="270">
+					<from>
+						<alias uid="368"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="369" angle="0">
+					<from>
+						<alias uid="370"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<aux x="1277.09" y="768.572" width="49.25" height="14" name="lambda Pq">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="371" angle="180">
+					<from>
+						<alias uid="372"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="373" angle="90">
+					<from>
+						<alias uid="374"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="375" angle="270">
+					<from>
+						<alias uid="376"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="378" angle="0">
+					<from>
+						<alias uid="377"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="379" angle="146.772">
+					<from>
+						<alias uid="380"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="30" x="530.678" y="510.571" width="45.25" height="14">
 					<shape type="name_only"/>
 					<of>par_sigma</of>
@@ -1620,14 +1810,14 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<shape type="name_only"/>
 					<of>var_theta</of>
 				</alias>
-				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" label_side="center" uid="67" x="72.1429" y="217.929" width="27.1429" height="25">
+				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" label_side="center" uid="67" x="72.8572" y="175.072" width="27.1429" height="25">
 					<of>E</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="69" x="63.0893" y="256.429" width="45.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="69" x="63.8036" y="213.572" width="45.25" height="14">
 					<shape type="name_only"/>
 					<of>par_sigma</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="71" x="61.0893" y="283.572" width="49.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="71" x="61.8036" y="240.715" width="49.25" height="14">
 					<shape type="name_only"/>
 					<of>par_omega</of>
 				</alias>
@@ -1643,33 +1833,6 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<shape type="name_only"/>
 					<of>par_gamma</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="95" x="757.589" y="311.571" width="46.25" height="14">
-					<shape type="name_only"/>
-					<of>par_kappa</of>
-				</alias>
-				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="130" x="72.667" y="745.357" width="34.2857" height="25.7143">
-					<of>Pd</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="133" x="4.80357" y="806.762" width="43.25" height="14">
-					<shape type="name_only"/>
-					<of>var_zeta_t</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="136" x="94.3099" y="916.881" width="50.25" height="14">
-					<shape type="name_only"/>
-					<of>par_upsilon</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="138" x="179.732" y="863.31" width="12.25" height="14">
-					<shape type="name_only"/>
-					<of>N</of>
-				</alias>
-				<alias color="#797979" background="white" font_style="italic" font_color="#797979" uid="140" x="387.336" y="220" width="38.25" height="14">
-					<shape type="name_only"/>
-					<of>var_mu_i</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="144" x="144.56" y="607.428" width="41.25" height="14">
-					<shape type="name_only"/>
-					<of>var_mu_q</of>
-				</alias>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="151" x="985" y="381.714" width="12.25" height="14">
 					<shape type="name_only"/>
 					<of>N</of>
@@ -1677,13 +1840,6 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="153" x="973.143" y="348.071" width="50.25" height="14">
 					<shape type="name_only"/>
 					<of>par_upsilon</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="157" x="1046.52" y="334.071" width="11.25" height="14">
-					<shape type="name_only"/>
-					<of>k</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="159" x="1120.5" y="379.214" width="19" height="19">
-					<of>Dk</of>
 				</alias>
 				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="164" x="1031.43" y="223.929" width="28.5714" height="26.4286">
 					<of>P</of>
@@ -1710,26 +1866,23 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<shape type="name_only"/>
 					<of>N</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="186" x="993.268" y="564.821" width="12.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="186" x="1004.39" y="555" width="12.25" height="14">
 					<shape type="name_only"/>
 					<of>B</of>
 				</alias>
-				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="190" x="1121.43" y="603.286" width="31.4286" height="27.1429">
-					<of>I_i</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="192" x="1004.39" y="609.857" width="12.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="192" x="1000.82" y="617" width="12.25" height="14">
 					<shape type="name_only"/>
 					<of>N</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="198" x="1058.87" y="650.071" width="12.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="198" x="1055.3" y="657.214" width="12.25" height="14">
 					<shape type="name_only"/>
 					<of>B</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="196" x="997.25" y="650.071" width="43.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="196" x="1041.84" y="585.964" width="43.25" height="14">
 					<shape type="name_only"/>
 					<of>par_iota_d</of>
 				</alias>
-				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" label_side="center" uid="203" x="1126.07" y="685.429" width="31.4286" height="27.1429">
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="203" x="1126.07" y="685.429" width="31.4286" height="27.1429">
 					<of>A</of>
 				</alias>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="205" x="1011.73" y="696.571" width="12.25" height="14">
@@ -1740,19 +1893,11 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 					<shape type="name_only"/>
 					<of>B</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="194" x="1101.09" y="650.071" width="49.25" height="14">
-					<shape type="name_only"/>
-					<of>par_omega</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="216" x="1077.88" y="580.143" width="34.25" height="14">
-					<shape type="name_only"/>
-					<of>par_eta</of>
-				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="218" x="526.089" y="311.571" width="45.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="218" x="530.678" y="308.714" width="45.25" height="14">
 					<shape type="name_only"/>
 					<of>par_sigma</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="254" x="268.161" y="143" width="12.25" height="14">
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="254" x="268.875" y="100.143" width="12.25" height="14">
 					<shape type="name_only"/>
 					<of>N</of>
 				</alias>
@@ -1786,10 +1931,6 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="284" x="398.143" y="515.286" width="18" height="18">
 					<of>lambda</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" uid="286" x="416.143" y="304.429" width="41.25" height="14">
-					<shape type="name_only"/>
-					<of>var_mu_q</of>
-				</alias>
 				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="298" x="858.071" y="908.857" width="18" height="18">
 					<of>Sh_to_Ei</of>
 				</alias>
@@ -1801,6 +1942,108 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				</alias>
 				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="303" x="990.393" y="817.571" width="18" height="18">
 					<of>Sh_to_E</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="308" x="580.749" y="308.714" width="49.25" height="14">
+					<shape type="name_only"/>
+					<of>par_omega</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="313" x="839.946" y="330.429" width="51.25" height="14">
+					<shape type="name_only"/>
+					<of>par_gamma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="314" x="647.999" y="322.714" width="31.25" height="14">
+					<shape type="name_only"/>
+					<of>par_nu</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="318" x="822.392" y="215.143" width="46.25" height="14">
+					<shape type="name_only"/>
+					<of>par_kappa</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="325" x="364.286" y="982.428" width="34.2857" height="25.7143">
+					<of>Pd</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="328" x="30.4528" y="1094.93" width="50.25" height="14">
+					<shape type="name_only"/>
+					<of>par_upsilon</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="331" x="65.1606" y="995.142" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="333" x="431.019" y="1104.17" width="30.25" height="14">
+					<shape type="name_only"/>
+					<of>scaler</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="338" x="112.721" y="1087.64" width="35.7143" height="28.5714">
+					<of>Pd</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="343" x="245.804" y="1151" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="345" x="65.1606" y="1200.28" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="347" x="1121.43" y="612.214" width="33.5714" height="23.5714">
+					<of>Iq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="349" x="157.732" y="602.286" width="40.25" height="14">
+					<shape type="name_only"/>
+					<of>var_mu_s</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="351" x="388.015" y="288.714" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_mu_i</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="353" x="325.494" y="314.429" width="40.25" height="14">
+					<shape type="name_only"/>
+					<of>var_mu_s</of>
+				</alias>
+				<alias font_style="italic" uid="356" x="1092.98" y="381.714" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>var_zeta_k</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="360" x="1055.21" y="348.071" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>var_zeta_t</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="362" x="1357.93" y="654.357" width="45" height="35">
+					<of>Aq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="364" x="1242.84" y="692" width="34.25" height="14">
+					<shape type="name_only"/>
+					<of>par_eta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="366" x="1280.09" y="701.428" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="368" x="1296.44" y="630.286" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="370" x="1234.59" y="664.429" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>B</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="372" x="1357.07" y="758.072" width="45" height="35">
+					<of>Pq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="374" x="1280.09" y="814" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="376" x="1295.59" y="734.429" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="377" x="1235.73" y="768.572" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>B</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="380" x="1074.48" y="411.786" width="35" height="20">
+					<of>Pd</of>
 				</alias>
 			</view>
 		</views>

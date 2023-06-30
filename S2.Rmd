@@ -88,6 +88,11 @@ data_df <- data.frame(time  = c(0, 90, 300, 390),
 
 est_obj <- estimate_rho(data_df)
 rho_est <- est_obj$estimate 
+
+# Testing capacity parameters
+tc_pars <- data.frame(name  = c("alpha_d", "rho_d", "Qd"),
+                      value = c(data_df[4, 2], rho_est, data_df[1, 2])) |> 
+  write_csv("./Data/Testing_capacity_pars.csv")
 ```
 
 
@@ -371,6 +376,10 @@ alpha_k_val <- (data_FTE[4, 2] * idx_val * zeta_val / 7) * (1000 / pop_val)
 iota_mid <- 0.51
 
 alpha_d_val <- data_df[4, 2]
+
+ct_pars <- data.frame(name  = c("alpha_k", "rho_k", "Qk"), 
+                      value = c(alpha_k_val, rho_k_est, Qk_init)) |> 
+  write_csv("./Data/Tracing_capacity_pars.csv")
 
 mdl       <- read_xmile(fp_ct, stock_list = list(Qd = data_df[1, 2],
                                               Qk = Qk_init),
