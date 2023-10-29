@@ -1,10 +1,15 @@
 ---
 title: "S3"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      smooth_scroll: FALSE
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(dplyr)
 library(pomp)
@@ -18,16 +23,17 @@ source("./R_scripts/plots.R")
 
 pop_val   <- 17475415
 beta_vals <- 0.724637681 * c(1, 1.5, 2)
-```
 
-
-```{r}
 bio_df <- read_csv("./Data/bio_params.csv", 
                        show_col_types = FALSE)
 
 bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
 ```
+
+This electronic supplementary material aims to document in a reproducible manner
+the simulation results presented in the main text regarding the 
+**social distancing** sub-model and the **integrated** structure (synthesis).
 
 ```{r}
 fp_mob <- "./models/05_Mobility.stmx"
@@ -60,6 +66,8 @@ label_df <- data.frame(iter = 1:3, label = labels,
 
 # Validation
 
+Here, we verify that the synthesis model and intervention-specific models 
+produce identical output under equivalent configurations.
 
 
 ```{r}
@@ -104,7 +112,7 @@ s_df <- data.frame(Qv = c(0, Qv_0, 0, 0, 0),
                    Qd = c(0, 0, Qd_0, Qd_0, 0), 
                    Qk = c(0, 0, 0, Qk_0, 0),
                    Qm = c(0, 0, 0, 0, Qm_0))
-tic()
+
 sim_output_syn <- sd_sensitivity_run(mdl_syn$deSolve_components, 
                                      stocks_df = s_df,
                                      start_time = 0,
@@ -119,14 +127,12 @@ sim_output_syn <- sd_sensitivity_run(mdl_syn$deSolve_components,
                                    iter == 3 ~ "Testing & Isolation",
                                    iter == 4 ~ "Contact tracing",
                                    iter == 5 ~ "Social distancing"))
-toc()
 ```
 
 ```{r}
 mdl_base <- read_xmile("./models/01_SEI3R.stmx", 
                   const_list = c(bio_params,
                                  par_beta = beta_vals[[2]]))
-tic()
 temp <- sd_simulate(mdl_base$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
@@ -135,7 +141,6 @@ temp <- sd_simulate(mdl_base$deSolve_components,
 sim_output_b <- temp |>   select(time, C_in) |> 
   mutate(intervention = "No intervention",
          model        = "Single intervention")
-toc()
 
 c_ref <- temp |> filter(time == 600) |> pull(C) / pop_val
 
@@ -151,7 +156,7 @@ mdl_vacc <- read_xmile("./models/02_Vaccines.stmx",
                                  par_phi     = phi_val,
                                  par_iota    = iota_v_val),
                   stock_list = list(Qv = Qv_0))
-tic()
+
 sim_output_vacc <- sd_simulate(mdl_vacc$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
@@ -159,7 +164,7 @@ sim_output_vacc <- sd_simulate(mdl_vacc$deSolve_components,
   select(time, C_in) |> 
   mutate(intervention = "Vaccination",
          model        = "Single intervention")
-toc()
+
 ```
 
 ```{r}
@@ -171,7 +176,7 @@ mdl_test <- read_xmile("./models/03_Testing_Isolation.stmx",
                                       par_rho_d   = test_cap_pars$rho_d,
                                       par_iota_d  = iota_d_val,
                                       par_delta   = delta_val))
-tic()
+
 sim_output_test <- sd_simulate(mdl_test$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
@@ -179,7 +184,6 @@ sim_output_test <- sd_simulate(mdl_test$deSolve_components,
   select(time, C_in) |> 
   mutate(intervention = "Testing & Isolation",
          model        = "Single intervention")
-toc()
 ```
 
 ```{r}
@@ -195,7 +199,7 @@ mdl_ct       <- read_xmile(fp_ct, stock_list = list(Qd = test_cap_pars$Qd,
                                        par_rho_k   = ct_cap_pars$rho_k,
                                        par_iota_d  = iota_d_val,
                                        par_delta   = delta_val))
-tic()
+
 sim_output_ct <- sd_simulate(mdl_ct$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
@@ -203,7 +207,6 @@ sim_output_ct <- sd_simulate(mdl_ct$deSolve_components,
   select(time, C_in) |> 
   mutate(intervention = "Contact tracing",
          model        = "Single intervention")
-toc()
 ```
 
 ```{r}
@@ -212,7 +215,7 @@ mdl_mob <- read_xmile(fp_mob,
                                      par_zeta_0 = beta_vals[[2]] * 10,
                                      par_tau_m = 0),
                   stock_list = list(Qm = Qm_0))
-tic()
+
 sim_output_mob <- sd_simulate(mdl_mob$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
@@ -220,11 +223,10 @@ sim_output_mob <- sd_simulate(mdl_mob$deSolve_components,
   select(time, C_in) |> 
   mutate(intervention = "Social distancing",
          model        = "Single intervention")
-toc()
 ```
 
 
-```{r, warning = FALSE}
+```{r, fig.cap = "Fig 1. Output comparison", warning = FALSE}
 sgl_int <- bind_rows(sim_output_b, sim_output_vacc, sim_output_test,
                      sim_output_ct, sim_output_mob)
 
@@ -240,22 +242,9 @@ ggplot(df, aes(time, C_in/pop_val)) +
   labs(x = "Day", y = "Incidence rate")
 ```
 
-```{r, warning = FALSE}
-ggplot(sgl_int, aes(time, C_in / pop_val)) +
-  geom_line(aes(colour = intervention)) +
-  scale_x_continuous(limits = c(0, 150)) +
-  theme_classic()
-```
+# Sensitivity analysis
 
-```{r, warning = FALSE}
-sim_output_syn |> 
-  ggplot(aes(time, C_in / pop_val)) +
-  geom_line(aes(colour = intervention)) +
-  scale_x_continuous(limits = c(0, 150)) +
-  theme_classic()
-```
-
-## Sensitivity analysis
+## Exploration space
 
 ```{r}
 set.seed(19860618)
@@ -269,9 +258,11 @@ sobol_design(lower = c(par_xi    = 0,
              nseq = n_iters) -> c_df
 ```
 
-```{r}
-plot(c_df, cex = , col = alpha("steelblue", 0.25))
+```{r, fig.cap = "Fig 2. Social distancing exploration space"}
+plot(c_df, pch = 16, cex = 0.5, col = "steelblue",
+     xlab = expression(xi), ylab = expression(tau^m))
 ```
+
 
 ```{r}
 mdl_sens <- read_xmile(fp_synthesis,
@@ -304,13 +295,13 @@ if(!file.exists(fn)) {
   sens <- sd_sensitivity_run(mdl_sens$deSolve_components,
                              consts_df          = c_df,
                              start_time         = 0,
-                             stop_time          = 300,
+                             stop_time          = 600,
                              timestep           = 1 / 32,
                              integ_method       = "euler",
                              multicore          = TRUE,
                              reporting_interval = 1) |> 
     select(time, C, C_in, par_xi, par_tau_m) |> 
-      filter(time == 300) |> 
+      filter(time == 600) |> 
       mutate(c   = C / pop_val)
     
     saveRDS(sens, fn)
@@ -326,8 +317,8 @@ c_star_df <- sens |> mutate(c_star = c/c_ref)
 
 ```{r}
 demo_df <- sd_sensitivity_run(mdl_sens$deSolve_components, 
-                   consts_df = data.frame(par_xi = c(0.6, 0), par_tau_m = 30),
-                   start_time = 0, stop_time = 300, timestep = 1 /32, 
+                   consts_df = data.frame(par_xi = c(0.7, 0), par_tau_m = 35),
+                   start_time = 0, stop_time = 600, timestep = 1 /32, 
                    multicore = TRUE, n_cores = 2) |> 
   select(time, iter, Z, var_theta, C_in, k, Dk, S_to_R) |> 
   mutate(`Contact tracing rate` = k/ Dk,
@@ -346,12 +337,11 @@ demo_df <- sd_sensitivity_run(mdl_sens$deSolve_components,
 ```
 
 ```{r, warning = FALSE, fig.height = 7, fig.width = 7}
-g <- plot_fig_09(sens_mob, c_star_df, demo_df)
+g <- plot_fig_09(sens_mob, c_star_df, demo_df, sim_output_b)
 
 ggsave("./plots/Fig_09_Social_distancing.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
 
-g
 ```
 
 

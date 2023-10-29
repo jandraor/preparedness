@@ -183,11 +183,11 @@ plot_fig_06 <- function(df1, df2, df3) {
                            name = parse(text = "t^'*'"))  +
    geom_point(data = df2 |> filter(iter == 5001),
                colour = "#0363BB", shape = 1, size = 0.5) +
-    labs(x = parse(text = "'Testing growth rate'~(rho^d)"),
-         y = parse(text = "'Testing long-term capacity'~(alpha^d)"),
+    labs(x        = parse(text = "'Testing growth rate'~(rho^d)"),
+         y        = parse(text = "'Testing long-term capacity'~(alpha^d)"),
          title    = parse(text = "delta~': Willingness to take a test'"),
          subtitle = parse(text = "iota^d~': Willingness to isolate if positive'"),
-         caption = "Blue dot: Estimated value") +
+         caption  = "Highlighted point (in blue): Estimated value") +
     theme_classic() +
     theme(axis.title  = element_text(colour = "grey65"),
           axis.line  = element_line(colour = "grey90"),
@@ -195,7 +195,7 @@ plot_fig_06 <- function(df1, df2, df3) {
           axis.ticks = element_line(colour = "grey90"),
           plot.title    = element_text(colour = "grey40", size = 9),
           plot.subtitle = element_text(colour = "grey40", size = 9),
-          plot.caption = element_text(colour = "grey60", size = 5),
+          plot.caption = element_text(colour = "grey60", size = 8),
           strip.background = element_rect(colour = "grey80",
                                           linewidth = 0.5)) -> g2
 
@@ -228,7 +228,7 @@ plot_fig_06 <- function(df1, df2, df3) {
                colour = "#0363BB", shape = 1, size = 0.5) +
     labs(x       = parse(text = "rho^d"),
          y       = parse(text = "alpha^d"),
-         caption = "Testing at the beginning of the pre-clinical phase") +
+         caption = "Assumption: Testing pre-clinical individuals") +
     theme_classic() +
     theme(axis.title  = element_text(colour = "grey65"),
           axis.line  = element_line(colour = "grey90"),
@@ -236,7 +236,7 @@ plot_fig_06 <- function(df1, df2, df3) {
           axis.ticks = element_line(colour = "grey90"),
           strip.background = element_rect(colour = "grey80",
                                           linewidth = 0.5),
-          plot.caption = element_text(size = 6, colour = "grey40",
+          plot.caption = element_text(size = 8, colour = "grey40",
                                       hjust = 0))-> g3
 
   g4 <- (g2 / g3) + plot_layout(heights = c(5, 2))
@@ -325,10 +325,13 @@ draw_fig_8C <- function(df) {
                            limits = c(0, 30),
                            breaks = seq(0, 30, 6),
                            name = parse(text = "t^'*'"))  +
-   labs(x = parse(text = "'CT growth rate'~(rho^k)"),
-               y = parse(text = "'CT long-term capacity'~(alpha^k)"),
-          title = "ts: Testing scenario",
-         subtitle = parse(text = "iota^d~': Willingness to isolate if positive'")) +
+   geom_point(data = df |> filter(iter == 5001),
+               colour = "#0363BB", shape = 1, size = 0.5) +
+   labs(x        = parse(text = "'CT growth rate'~(rho^k)"),
+        y        = parse(text = "'CT long-term capacity'~(alpha^k)"),
+        title    = "ts: Testing scenario",
+        subtitle = parse(text = "iota^d~': Willingness to quarantine'"),
+        caption  = "Highlighted point (in blue): Estimated value") +
     theme_classic() +
     theme(axis.title  = element_text(colour = "grey65"),
           axis.line  = element_line(colour = "grey90"),
@@ -336,7 +339,7 @@ draw_fig_8C <- function(df) {
           axis.ticks = element_line(colour = "grey90"),
           plot.title    = element_text(colour = "grey40", size = 9),
           plot.subtitle = element_text(colour = "grey40", size = 9),
-          plot.caption = element_text(colour = "grey60", size = 5),
+          plot.caption = element_text(colour = "grey60", size = 8),
           strip.background = element_rect(colour = "grey80",
                                           linewidth = 0.5),
           strip.text.y = element_text(size = 7))
@@ -367,6 +370,8 @@ draw_fig_8D <- function(df) {
                            limits = c(0.5, 1),
                            breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1),
                            name = parse(text = "p^'*'"))  +
+    geom_point(data = df |> filter(iter == 5001),
+               colour = "#0363BB", shape = 1, size = 0.5) +
     labs(x = parse(text = "rho^k"),
          y = parse(text = "alpha^k")) +
     theme_classic() +
@@ -382,9 +387,9 @@ draw_fig_8D <- function(df) {
           strip.text.y = element_text(size = 7))
 }
 
-plot_fig_09 <- function(df, df2, df3) {
+plot_fig_09 <- function(df, df2, df3, df4) {
 
-  fig_09a <- draw_fig_9A(df)
+  fig_09a <- draw_fig_9A(df, df4)
 
   fig_09b <- draw_fig_9B(df2)
 
@@ -393,16 +398,19 @@ plot_fig_09 <- function(df, df2, df3) {
   ((fig_09a / fig_09b) | fig_09c) + plot_annotation(tag_levels = 'A')
 }
 
-draw_fig_9A <- function(df) {
+draw_fig_9A <- function(df, df4) {
 
   ggplot(df, aes(time, C_in / pop_val)) +
     geom_line(aes(colour = as.factor(iter))) +
+    geom_line(data = df4, colour = "grey70") +
     labs(x = "Day", y = "Incidence rate") +
     scale_colour_manual(values = c("#54B4EA", "#0363BB", "#023785")) +
     geom_text(data = label_df, aes(x = x, y = y, label = label,
                                    colour = as.factor(iter)),
               parse = TRUE, size = 2.5) +
-
+    scale_x_continuous(limits = c(0, 250)) +
+    annotate("text", x = 25, y = 0.081, label = "No intervention",
+             colour = "grey70", size = 2.2) +
     theme_classic() +
     theme(axis.title      = element_text(colour = "grey65", size = 9),
           axis.line       = element_line(colour = "grey90"),
@@ -425,7 +433,7 @@ draw_fig_9B <- function(df) {
                                       cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
                            limits = c(0, 1),
                            breaks = seq(0, 1, 0.2),
-                           name = parse(text = "c[300]^'*'")) +
+                           name = parse(text = "c[600]^'*'")) +
     labs(x = parse(text = "'Stringency'~(xi)"),
          y = parse(text = "'Start of restriction'~(tau^m)")) +
     theme_classic() +
@@ -443,7 +451,7 @@ draw_fig_9C <- function(df) {
                   linetype = as.factor(iter)), alpha = 0.75) +
     scale_linetype_manual(values = c("dotdash", "solid")) +
     facet_wrap(~name, scales = "free", ncol = 1) +
-    scale_x_continuous(limits = c(1, 300)) +
+    scale_x_continuous(limits = c(1, 600)) +
     scale_colour_manual(values = c("grey50", "#0363BB")) +
     geom_vline(xintercept = 180, colour = "grey75", linetype = "dotted") +
     labs(colour = "Social distancing?", linetype = "Social distancing?",
@@ -459,7 +467,7 @@ draw_fig_9C <- function(df) {
           strip.text = element_text(size = 7,
                                     margin = margin(b = 0.1, t = 0.1,
                                                     unit = "cm")),
-          plot.caption = element_text(colour = "grey75", size = 4.5))
+          plot.caption = element_text(colour = "grey75", size = 7))
 }
 
 

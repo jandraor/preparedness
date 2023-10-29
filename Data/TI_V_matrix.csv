@@ -1,0 +1,7 @@
+,$E$,$P$,$I$,$A$,$P^d$,$I^d$
+$E$,$\sigma$,0,0,0,0,0
+$P$,$-(1 - \theta) \omega \sigma$,$\nu$,0,0,0,0
+$I$,0,$-\nu$,$\gamma$,0,0,0
+$A$,$-(1 - \omega) \sigma$,0,0,$\kappa$,0,0
+$P^d$,$-\theta \omega \sigma$,0,0,0,$\nu$,0
+$I^d$,0,0,0,0,$-\nu$,$\gamma$

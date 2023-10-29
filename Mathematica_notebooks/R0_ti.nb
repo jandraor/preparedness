@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      6996,        217]
-NotebookOptionsPosition[      6361,        196]
-NotebookOutlinePosition[      6787,        213]
-CellTagsIndexPosition[      6744,        210]
+NotebookDataLength[      5665,        180]
+NotebookOptionsPosition[      5157,        162]
+NotebookOutlinePosition[      5583,        179]
+CellTagsIndexPosition[      5540,        176]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -135,63 +135,29 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[", "sr", "]"}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
-  RowBox[{
-   RowBox[{"Print", "[", 
-    RowBox[{"FullSimplify", "[", "sr", "]"}], "]"}], ";"}], 
-  "\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
-  "\[IndentingNewLine]"}], "\[IndentingNewLine]"}], "Input",
+  RowBox[{"Print", "[", 
+   RowBox[{"FullSimplify", "[", "sr", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"TeXForm", "[", 
+  RowBox[{"FullSimplify", "[", "sr", "]"}], "]"}]}], "Input",
  CellChangeTimes->{{3.893164866774865*^9, 3.8931648850728083`*^9}, {
   3.893165044310801*^9, 3.893165086563652*^9}, {3.893165136590148*^9, 
   3.89316532393196*^9}, {3.8931657544173594`*^9, 3.893165988937336*^9}, {
   3.8931660191994267`*^9, 3.893166165673997*^9}, {3.893166243174008*^9, 
-  3.893166377863102*^9}, {3.893166774381*^9, 3.893166954306979*^9}},
- CellLabel->
-  "In[382]:=",ExpressionUUID->"0c0edf95-d7f4-4133-bfba-49c962fcb27a"],
+  3.893166377863102*^9}, {3.893166774381*^9, 3.893166954306979*^9}, {
+  3.8987713435348377`*^9, 
+  3.898771387736265*^9}},ExpressionUUID->"0c0edf95-d7f4-4133-bfba-\
+49c962fcb27a"],
 
-Cell[CellGroupData[{
-
-Cell[BoxData[
- RowBox[{
-  FractionBox["1", 
-   RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Nu]"}]], 
-  RowBox[{"\[Beta]", " ", 
-   RowBox[{"(", 
-    RowBox[{
-     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", "\[Nu]"}], "+", 
-     RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Omega]"}], "-", 
-     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", "\[Nu]", " ", "\[Omega]"}], "+", 
-     
-     RowBox[{"\[Kappa]", " ", "\[Nu]", " ", "\[Omega]"}], "-", 
-     RowBox[{
-     "\[Theta]", " ", "\[Iota]", " ", "\[Kappa]", " ", "\[Nu]", " ", 
-      "\[Omega]"}]}], ")"}]}]}]], "Print",
- CellChangeTimes->{{3.893166934250451*^9, 3.8931669566392384`*^9}},
+Cell["\<\
+\\frac{\\beta  (\\gamma  \\eta  (\\nu -\\nu 
+   \\omega )+\\gamma  \\kappa  \\omega
+   +\\kappa  \\nu  \\omega  (1-\\theta  \\iota
+   ))}{\\gamma  \\kappa  \\nu }\
+\>", "Output",
+ CellChangeTimes->{3.8987713732696123`*^9},
  CellLabel->
-  "During evaluation of \
-In[382]:=",ExpressionUUID->"058716da-4ab7-4f46-b50d-11cd4ee7592e"],
-
-Cell[BoxData[
- RowBox[{
-  FractionBox["1", 
-   RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Nu]"}]], 
-  RowBox[{"\[Beta]", " ", 
-   RowBox[{"(", 
-    RowBox[{
-     RowBox[{"\[Gamma]", " ", "\[Kappa]", " ", "\[Omega]"}], "+", 
-     RowBox[{
-      RowBox[{"(", 
-       RowBox[{"1", "-", 
-        RowBox[{"\[Theta]", " ", "\[Iota]"}]}], ")"}], " ", "\[Kappa]", " ", 
-      "\[Nu]", " ", "\[Omega]"}], "+", 
-     RowBox[{"\[Gamma]", " ", "\[Eta]", " ", 
-      RowBox[{"(", 
-       RowBox[{"\[Nu]", "-", 
-        RowBox[{"\[Nu]", " ", "\[Omega]"}]}], ")"}]}]}], ")"}]}]}]], "Print",
- CellChangeTimes->{{3.893166934250451*^9, 3.893166956640462*^9}},
- CellLabel->
-  "During evaluation of \
-In[382]:=",ExpressionUUID->"f2909ec2-8666-4b8f-a345-62d9b255c9fd"]
-}, Open  ]]
+  "Out[63]//TeXForm=",ExpressionUUID->"1259fd1e-2b7b-4106-b026-dc5c98dea713"]
 }, Open  ]]
 },
 WindowSize->{1512, 916},
@@ -213,15 +179,10 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[CellGroupData[{
-Cell[580, 22, 4239, 126, 1066, "Input",ExpressionUUID->"0c0edf95-d7f4-4133-bfba-49c962fcb27a"],
-Cell[CellGroupData[{
-Cell[4844, 152, 737, 18, 72, "Print",ExpressionUUID->"058716da-4ab7-4f46-b50d-11cd4ee7592e"],
-Cell[5584, 172, 749, 20, 72, "Print",ExpressionUUID->"f2909ec2-8666-4b8f-a345-62d9b255c9fd"]
-}, Open  ]]
+Cell[580, 22, 4235, 127, 880, "Input",ExpressionUUID->"0c0edf95-d7f4-4133-bfba-49c962fcb27a"],
+Cell[4818, 151, 323, 8, 198, "Output",ExpressionUUID->"1259fd1e-2b7b-4106-b026-dc5c98dea713"]
 }, Open  ]]
 }
 ]
 *)
-
-(* End of internal cache information *)
 

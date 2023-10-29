@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(dplyr)
 library(kableExtra)
@@ -28,15 +28,17 @@ source("./R_scripts/optim_est.R")
 
 pop_val   <- 17475415
 beta_vals <- 0.724637681 * c(1, 1.5, 2)
-```
 
-```{r}
 bio_df <- read_csv("./Data/bio_params.csv", 
                        show_col_types = FALSE)
 
 bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
 ```
+
+This electronic supplementary material aims to document in a reproducible manner
+the simulation results presented in the main text regarding the 
+**testing & isolation** and **contact tracing** sub-models.
 
 # Base case
 
@@ -73,11 +75,41 @@ ref_peak <- base_df |> filter(R0 == 3) |>
 
 # Testing & Isolation
 
-```{r}
-delta_vals <- c(0.3, 0.6, 0.9)
-str_time   <- 0
-stp_time   <- 300
+## $\Re_0$ analytical expression
+
+### $F$ matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/TI_F_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
 ```
+
+### $V$ matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/TI_V_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
+```
+
+### Spectral radius
+
+\begin{equation}
+
+  \Re_0 = \frac{\beta  (\gamma  \eta  (\nu -\nu 
+   \omega )+\gamma  \kappa  \omega
+   +\kappa  \nu  \omega  (1-\theta  \iota^d
+   ))}{\gamma  \kappa  \nu }
+\end{equation}
 
 ## Partial calibration
 
@@ -96,7 +128,7 @@ tc_pars <- data.frame(name  = c("alpha_d", "rho_d", "Qd"),
 ```
 
 
-```{r}
+```{r, fig.cap = "Fig 1. Testing capacity's calibration"}
 ggplot(est_obj$sim, aes(time, Q)) +
   geom_line() +
   geom_point(data = data_df, aes(y = value), colour = "red") +
@@ -154,6 +186,8 @@ df <- bind_rows(no_df, ti_df) |>
   pivot_longer(c(-time, - model))
 ```
 
+## Exploration space
+
 ```{r}
 set.seed(600)
 
@@ -169,8 +203,15 @@ pars_df <- pars_df |> bind_rows(data.frame(par_rho_d   = rho_est,
 consts_df <- pars_df
 ```
 
+```{r, fig.cap = "Fig 2. Testing capacity's exploration space"}
+plot(pars_df, pch = 16, cex = 0.5, col = "steelblue",
+     xlab = expression(rho^d), ylab = expression(alpha^d))
+```
+
 ```{r}
-plot(pars_df)
+delta_vals <- c(0.3, 0.6, 0.9)
+str_time   <- 0
+stp_time   <- 300
 ```
 
 ```{r}
@@ -292,8 +333,6 @@ g <- plot_fig_06(df, time_thres_df, time_thres_df2)
 
 ggsave("./plots/Fig_06_Testing_analysis.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
-
-g
 ```
 
 # Contact tracing
@@ -355,7 +394,7 @@ rho_k_est   <- est_obj$estimate
 ```
 
 
-```{r}
+```{r, fig.cap = "Fig 3. Contact-tracing capacity's calibration"}
 ggplot(est_obj$sim, aes(time, Q)) +
   geom_line() +
   geom_point(data = data_FTE, aes(y = value), colour = "red") +
@@ -414,6 +453,8 @@ comparison_ti_ct <- bind_rows(ct_df, ti_ref2) |>
   pivot_longer(c(-time, -model))
 ```
 
+## Exploration space
+
 ```{r}
 set.seed(19860618)
 
@@ -429,8 +470,9 @@ pars_df <- pars_df |> bind_rows(data.frame(par_rho_k   = rho_k_est,
 consts_df <- pars_df
 ```
 
-```{r}
-plot(pars_df)
+```{r, fig.cap = "Fig 4. Contact-tracing capacity's exploration space"}
+plot(pars_df, pch = 16, cex = 0.5, col = "steelblue",
+     xlab = expression(rho^k), ylab = expression(alpha^k))
 ```
 
 
@@ -542,70 +584,11 @@ results_df <- map_df(scenarios_list, \(sce_obj) {
 })
 ```
 
-```{r}
-cap_sce <- scenarios_df[2:3, ] |> 
-  mutate(par_alpha_k = alpha_k_val * 100,
-         par_rho_k   = rho_k_est * 10) |> 
-  rename(par_alpha_d = alpha_d)
-
-mdl <- read_xmile(fp_ct,
-                  stock_list = list(Qk = Qk_init),
-                    const_list = c(bio_params,
-                                   par_zeta    = zeta_val,
-                                   par_rho_d   = 0,
-                                   par_iota_d  = unique(cap_sce$iota),
-                                   par_delta   = 0.60))
-
-c_df <- cap_sce |> select(-Testing_Scenario, -Qd, -iota)
-s_df <- cap_sce |> select(Qd)
-
-sens <- sd_sensitivity_run(mdl$deSolve_components,
-                           consts_df = c_df,
-                           stocks_df = s_df,
-                           start_time         = 0,
-                           stop_time          = 300,
-                           timestep           = 1 / 64,
-                           integ_method       = "euler",
-                           multicore          = TRUE,
-                           reporting_interval = 1/8) |> 
-  filter(time > 0)
-```
-
-```{r}
-grid_df <- expand.grid(var_theta = seq(0, 1, 0.001), zeta_star = seq(0, 1, 0.001))
-
-R0_sens <- map_df(c(0.5, 0.75, 1), \(iota_val, grid_df) {
-  
-  R0_est <- estimate_R0_ct(beta_vals[[2]] * 10, par_upsilon = 0.1,
-                           var_theta =  grid_df$var_theta, 
-                           par_iota  = iota_val, 
-                           var_zeta_k = beta_vals[[2]] * 10 * grid_df$zeta_star,
-                           bio_params)
-  
-  grid_df$R0 <- R0_est
-  
-  grid_df |> mutate(par_iota_d = iota_val)
-}, grid_df = grid_df)
-```
-
-
-
-```{r}
-ggplot(R0_sens, aes(var_theta, zeta_star, r0)) +
-  facet_wrap(~par_iota_d) +
-  geom_raster(aes(fill = R0)) +
-  scale_fill_viridis_b(breaks = c(1, 1.5, 2, 2.5, 3),
-                       option = "C", direction = -1) +
-  theme_classic()
-```
-
 ```{r, warning = FALSE, fig.height = 7, fig.width = 7}
 g <- plot_fig_08(comparison_ti_ct, test_cap, results_df)
 
 ggsave("./plots/Fig_08_CT_analysis.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
-
-g
 ```
 
 

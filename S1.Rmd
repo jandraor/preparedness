@@ -1,15 +1,19 @@
 ---
-title: "S2"
-author: "Jair Andrade"
-date: '2023-05-10'
-output: html_document
+title: "S1"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      smooth_scroll: FALSE
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(dplyr)
 library(ggplot2)
+library(kableExtra)
 library(patchwork)
 library(pomp)
 library(purrr)
@@ -25,9 +29,7 @@ source("./R_scripts/R0_estimation.R")
 pop_val <- 17475415
 
 beta_vals <- 0.724637681 * c(1, 1.5, 2)
-```
 
-```{r}
 bio_df <- read_csv("./Data/bio_params.csv", 
                        show_col_types = FALSE)
 
@@ -35,8 +37,54 @@ bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
 ```
 
+This electronic supplementary material aims to document in a reproducible manner
+the simulation results presented in the main text regarding the 
+**no-intervention** and **vaccination** sub-models.
 
-# Base case
+# Within-host profile (no intervention)
+
+## $\Re_0$ analytical expression
+
+We derive an analytical expression for the basic reproduction number ($\Re_0$)
+via the next-generation matrix method. This method consists of rewriting the 
+rates of infected states in the form of two matrices. One matrix corresponds to 
+the rate of appearance of new infections ($V$ matrix), and the other one to the 
+rate of transitions between compartments of infected individuals ($F$ matrix). 
+The product between $F$ and $V^{-1}$ is known as the next-generation matrix,
+whose largest eigenvalue (spectral radius) corresponds to $\Re_0$. We obtain 
+the analytical expressions using *Mathematica*.
+
+### $F$ matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/NI_F_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
+```
+
+### $V$ matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/NI_V_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
+```
+
+### Spectral radius
+
+\begin{equation}
+
+  \Re_0 = \beta  \left(\omega  \left(\frac{1}{\gamma }+\frac{1}{\nu
+   }\right) + \frac{\eta -\eta  \omega }{\kappa }\right)
+\end{equation}
 
 ```{r}
 mdl <- read_xmile("./models/01_SEI3R.stmx", const_list = bio_params)
@@ -53,31 +101,13 @@ sens_df <- sd_sensitivity_run(mdl$deSolve_components,
          s      = S / N)
 ```
 
-```{r}
-base_df <- sens_df |> select(time, c_base, par_beta, s) |> 
-  mutate(R0 = round(map_dbl(par_beta, estimate_R0, bio_params), 1),
-         Rt = R0 * s) |> 
-  filter(time - trunc(time) == 0)
-```
+## Simulations
 
-```{r}
-ggplot(base_df, aes(time, c_base)) +
-  geom_line(aes(group = R0)) + 
-  theme_classic()
-```
+### Attack rate
 
-```{r, warning = FALSE}
-Rt_df <- base_df |> 
-  mutate(diff_rt = abs(1 - Rt)) |> 
-  group_by(R0) |> 
-  filter(diff_rt == min(diff_rt))
-
-ggplot(base_df, aes(time, Rt)) +
-  geom_line(aes(group = R0, colour = as.factor(R0))) + 
-  scale_x_continuous(limits = c(0, 120)) +
-  geom_hline(yintercept = 1, linetype = "dotted", colour = "grey50") +
-  theme_classic()
-```
+We perform simulations for two variants of the within-host profile. Unlike the
+first variant (*SEI3R*), the second one accounts for disease-induced mortality
+(*SEI3RD*).
 
 ```{r}
 set.seed(1550)
@@ -87,7 +117,6 @@ betas   <- c(samples, beta_vals) |> sort()
 
 c_df <- data.frame(par_beta = betas)
 ```
-
 
 ```{r}
 fn <- "./saved_objects/model_01_beta_sens.rds"
@@ -114,9 +143,6 @@ SEI3R_df <- SEI3R_df |>
          model = "SEI3R")
 ```
 
-
-## Disease-inducing mortality
-
 ```{r}
 mdl2 <- read_xmile("./models/01b_SEI3RD.stmx",
                   const_list = c(bio_params, 
@@ -142,7 +168,6 @@ if(!file.exists(fn)) {
 } else SEI3RD_df <- readRDS(fn)
 ```
 
-
 ```{r}
 SEI3RD_df <- SEI3RD_df |>
   mutate(c  = C / pop_val,
@@ -150,8 +175,7 @@ SEI3RD_df <- SEI3RD_df |>
          model = "SEI3RD")
 ```
 
-
-```{r}
+```{r, fig.cap = "Fig 1. Attack rate comparison", fig.height = 4}
 df <- bind_rows(SEI3R_df, SEI3RD_df)
 
 plot_fig_02(df) -> g
@@ -162,21 +186,41 @@ ggsave("./plots/Fig_02_Attack_rate.pdf", plot = g,
 g
 ```
 
-```{r}
+### Final size
+
+To further illustrate that incorporating disease-induced mortality does not 
+substantially impact the dynamics of the within-host profile, we compare the
+attack rates obtained from both variants at day 150.
+
+```{r, fig.cap = "Fig 2. Final size comparison"}
 df2 <- df |> filter(time == 150)
 df_list <- split(df2, df2$model)
 
 ggplot(df2, aes(c)) +
   geom_histogram(aes(colour = model), fill = "white") +
   facet_wrap(~model, ncol = 1) +
+  scale_colour_manual(values = c("#2E71AF", "#FFBE82")) +
   labs(x = parse(text = "'Attack rate at day 150'~(c[150])"),
        y = "Count") +
   theme_minimal()
 ```
 
+```{r}
+base_df <- sens_df |> select(time, c_base, par_beta, s) |> 
+  mutate(R0 = round(map_dbl(par_beta, estimate_R0, bio_params), 1),
+         Rt = R0 * s) |> 
+  filter(time - trunc(time) == 0)
+```
+
+```{r, warning = FALSE}
+Rt_df <- base_df |> 
+  mutate(diff_rt = abs(1 - Rt)) |> 
+  group_by(R0) |> 
+  filter(diff_rt == min(diff_rt))
+```
 
 
-# Vaccines
+# Vaccination
 
 ```{r}
 vacc_path   <- "./models/02_Vaccines.stmx"
@@ -208,6 +252,8 @@ avl_sens <- sd_sensitivity_run(ds_inputs,
   select(time, iter, par_tau_v, Vaccine_supply)
 ```
 
+## Exploration space
+
 ```{r}
 set.seed(300)
 
@@ -218,12 +264,15 @@ sobol_design(lower = c(par_rho_v = 0,
              nseq = n_sims) -> consts_df
 ```
 
-```{r}
-plot(consts_df)
+```{r, fig.cap = "Fig 3. Vaccination's exploration space"}
+plot(consts_df, pch = 16, cex = 0.5, col = "steelblue",
+     xlab = expression(rho^v), ylab = expression(tau^v))
 ```
 
-
 ```{r}
+## Simulations
+### By transmissibility level
+
 lapply(beta_vals, \(beta_val, consts_df) {
   
   R0_val <- estimate_R0(beta_val, bio_params) |> round(1)
@@ -257,7 +306,6 @@ lapply(beta_vals, \(beta_val, consts_df) {
 sens_df <- bind_rows(sens_list)
 ```
 
-
 ```{r}
 comp_df <- base_df |> 
   mutate(key = paste(time, R0, sep = "_")) |> 
@@ -277,9 +325,8 @@ R0_sens <- sens_df |> filter(time == 300) |>
 ```
 
 
-## By willingness to vaccinate
-
 ```{r}
+# By willingness to vaccinate
 iotas <- c(0.2, 0.60, 1)
 ```
 
@@ -374,20 +421,17 @@ vacc_supp <- out_df |> filter(time <= 90) |>
     mutate(ratio = Vaccine_demand / Vaccine_supply)
 ```
 
-
-
 ```{r, dev='cairo_pdf', fig.height = 7, fig.width = 7}
 g <- plot_fig_04(avl_sens, R0_sens, final_df, rates_df, vacc_supp)
 
 ggsave("./plots/Fig_04_Vaccination_analysis.pdf", plot = g, 
        height = 7.5, width = 7, device = cairo_pdf)
-
-g
 ```
 
-## Ideal scenario
+
 
 ```{r}
+## Ideal scenario
 mdl <- read_xmile(vacc_path, const_list = c(bio_params,
                                      par_alpha_v = alpha_v_val,
                                      par_rho_v   = 0,
@@ -403,5 +447,5 @@ sd_simulate(mdl$deSolve_components, start_time = 0,
             stop_time = 1000, 
             timestep = 1 / 64, integ_method = "euler") |> 
   select(time, C) |> mutate(c = C/pop_val) |> filter(time == 300) |> 
-  pull(c)
+  pull(c) -> ideal_scenario_val
 ```
