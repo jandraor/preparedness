@@ -12,6 +12,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(dplyr)
+library(gt)
+library(Metrics)
 library(pomp)
 library(readr)
 library(readsdr)
@@ -20,63 +22,24 @@ library(tictoc)
 library(tidyr)
 
 source("./R_scripts/plots.R")
+source("./R_scripts/optim_est.R")
 
-pop_val   <- 17475415
-beta_vals <- 0.724637681 * c(1, 1.5, 2)
+pop_val    <- 17475415
+beta_vals  <- 0.724637681 * c(1, 1.5, 2)
+zeta_val   <- beta_vals[[2]] * 10 # Contact rate
+phi_val    <- 0.65 # Vaccine effectiveness
+tau_v_val  <- 180 # Vaccine availability
+iota_v_val <- 0.75 # Willingness to vaccinate
+iota_d_val <- 0.51 # Willingness to isolate/quarantine
+delta_val  <- 0.6 # Willingness to take a test
+par_tau_m  <- 0 # Day at which mobility restrictions start
 
 bio_df <- read_csv("./Data/bio_params.csv", 
                        show_col_types = FALSE)
 
 bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
-```
 
-This electronic supplementary material aims to document in a reproducible manner
-the simulation results presented in the main text regarding the 
-**social distancing** sub-model and the **integrated** structure (synthesis).
-
-```{r}
-fp_mob <- "./models/05_Mobility.stmx"
-
-mdl <- read_xmile(fp_mob, 
-                  const_list = c(bio_params, 
-                                 par_zeta_0 = beta_vals[[2]] * 10,
-                                 par_tau_m = 0),
-                  stock_list = list(Qm = 0))
-```
-
-```{r}
-Qm_vals <- c(30, 60, 90)
-sens_mob <- sd_sensitivity_run(mdl$deSolve_components,
-                               stocks_df = data.frame(Qm = Qm_vals),
-                               start_time   = 0,
-                               stop_time    = 240,
-                               timestep     = 1 / 32, 
-                               multicore    = TRUE)
-```
-
-```{r, fig.height = 3}
-labels <- str_glue("Q[0]^m~'= {Qm_vals }'")
-
-label_df <- data.frame(iter = 1:3, label = labels,
-                    x = c(90, 140, 190),
-                    y = 0.08)
-```
-
-
-# Validation
-
-Here, we verify that the synthesis model and intervention-specific models 
-produce identical output under equivalent configurations.
-
-
-```{r}
-fp_synthesis <- "./models/06_Synthesis.stmx"
-
-phi_val    <- 0.65
-iota_v_val <- 0.6
-iota_d_val <- 0.51 
-delta_val  <- 0.6
 
 test_cap_pars <- read_csv("./Data/Testing_capacity_pars.csv", 
                           show_col_types = FALSE) |> 
@@ -86,51 +49,142 @@ ct_cap_pars <- read_csv("./Data/Tracing_capacity_pars.csv",
                         show_col_types = FALSE) |> 
   tibble::deframe() |> as.list()
 
-mdl_syn <- read_xmile(fp_synthesis,
-                      const_list = c(bio_params,
-                                     par_zeta_0  = beta_vals[[2]] * 10,
-                                     par_rho_v   = 0.15,
-                                     par_alpha_v = 12.26,
-                                     par_phi     = phi_val,
-                                     par_iota_v  = iota_v_val,
-                                     par_iota_d  = iota_d_val,
-                                     par_delta   = delta_val,
-                                     par_rho_d   = test_cap_pars$rho_d,
-                                     par_alpha_d = test_cap_pars$alpha_d,
-                                     par_rho_k   = ct_cap_pars$rho_k,
-                                     par_alpha_k = ct_cap_pars$alpha_k,
-                                     par_tau_m   = 0))
-```
-
-```{r}
-Qv_0 <- 2.45
 Qd_0 <- test_cap_pars$Qd
 Qk_0 <- ct_cap_pars$Qk
-Qm_0 <- 30
+Qm_0 <- 90
+```
 
-s_df <- data.frame(Qv = c(0, Qv_0, 0, 0, 0),
-                   Qd = c(0, 0, Qd_0, Qd_0, 0), 
-                   Qk = c(0, 0, 0, Qk_0, 0),
-                   Qm = c(0, 0, 0, 0, Qm_0))
+This electronic supplementary material aims to document in a reproducible manner
+the simulation results presented in the main text regarding the **vaccination** 
+structure.
 
-sim_output_syn <- sd_sensitivity_run(mdl_syn$deSolve_components, 
-                                     stocks_df = s_df,
-                                     start_time = 0,
-                                     stop_time = 1000,
-                                     timestep = 1 / 32,
-                                     reporting_interval = 1/32,
-                                     multicore = TRUE, n_cores = 5) |> 
-  select(time, iter, C_in, Qv, Qd, Qk, Qm) |> 
-  mutate(model        = "Synthesis",
-         intervention =  case_when(iter == 1 ~ "No intervention",
-                                   iter == 2 ~ "Vaccination",
-                                   iter == 3 ~ "Testing & Isolation",
-                                   iter == 4 ~ "Contact tracing",
-                                   iter == 5 ~ "Social distancing"))
+# Vaccination sub-model
+
+## Equations
+
+Compared to the SEI3R model (*1A_SEI3R.stmx*), the vaccination sub-model
+(*3C_V.stmx*) modify the dynamics of disease transmission in the following way:
+
+\begin{equation} \label{eq:4}
+  \begin{aligned}
+    \dot{S_t}   &= -\lambda_t S_t - \psi_t S_t\\
+    \dot{S^h_t} &= -\lambda_t S^h_t \\
+    \dot{S^v_t} &=  (1 - \phi)\psi_t S_t -\lambda_t S^v_t\\
+    \dot{E_t}   &= \lambda_t (S_t + S^v_t) - \sigma E_t\\
+    \dot{R_t}   &= \gamma I_t + \kappa A_t + \phi \psi_t S_t
+    \end{aligned}
+\end{equation}
+
+As with the *TTI* structure, we model vaccination capacity using the logistic
+growth structure. Furthermore, considering that vaccines are not available at 
+the start of the pandemic, we introduce an if-else function to account for
+this feature.
+
+\begin{equation} \label{eq:5}
+  \begin{aligned}
+    \psi_t  &= \frac{\min(S_t, f(Q^v_t, \tau^v))}{S_t} \\
+    f(Q_t, \tau) &= \begin{cases}
+    0,   & \text{for } t < \tau \\
+    \frac{Q_t N}{1000}, & \text{for } t \geq \tau
+    \end{cases}\\
+    \dot{Q^v_t} &= \begin{cases}
+      0, & \text{for } t < \tau \\
+      \rho^v Q^v_t (1 - \frac{Q^v_t} {\alpha^v}), & \text{for } t \geq \tau
+    \end{cases}\\
+  \end{aligned}
+\end{equation}
+
+## Partial calibration
+
+To configure the logistic structure in the vaccination sub-model, we use data
+from the COVID-19 in the Netherlands and model calibration. This data indicates
+that vaccination's initial capacity in Feb 2021 was 230.000 per week. From April 
+onwards, it was between 400.000-500.000 per week, and 6 weeks were needed to
+scale up to 1.500.000 per week^[https://www.medicalfacts.nl/wp-content/uploads/2021/02/Presentatie_de_heer_Jaap_van_Delden_programmadirecteur_vaccinatie_COVID-19_bij_het_RIVM1.pdf].
+
+```{r}
+data_vacc <- data.frame(time  = c(0, 60, 102),
+                        value = 1000 * (c(230000, 400000, 1500000) / 7) / pop_val)
+
+est_obj <- estimate_rho(data_vacc)
+
+par_rho_v   <- est_obj$estimate
+Qv_0        <- data_vacc$value |> head(1)
+par_alpha_v <- data_vacc$value |> tail(1)
 ```
 
 ```{r}
-mdl_base <- read_xmile("./models/01_SEI3R.stmx", 
+plot_fit(est_obj$sim, data_vacc)
+```
+
+# Comprehensive intervention (TTI + MR + V)
+
+All interventions are integrated into a single model (3B_TTI_PLUS_MR_PLUS_V.stmx).
+
+## Validation
+
+Before exploring the impact of a comprehensive approach, we verify that the
+integrated model and intervention-specific models produce identical output under
+equivalent configurations.
+
+
+```{r}
+fp_synthesis <- "./models/3B_TTI_PLUS_MR_PLUS_V.stmx"
+
+mdl_sth <- read_xmile(fp_synthesis,
+                     const_list = c(bio_params,
+                                    par_zeta_0 = zeta_val,
+                                    par_rho_v   = par_rho_v,
+                                    par_alpha_v = par_alpha_v,
+                                    par_phi     = phi_val,
+                                    par_iota_v  = iota_v_val,
+                                    par_iota_d  = iota_d_val,
+                                    par_delta   = delta_val,
+                                    par_rho_d   = test_cap_pars$rho_d,
+                                    par_alpha_d = test_cap_pars$alpha_d,
+                                    par_rho_k   = ct_cap_pars$rho_k,
+                                    par_alpha_k = ct_cap_pars$alpha_k,
+                                    par_tau_m   = par_tau_m,
+                                    par_tau_v   = tau_v_val,
+                                    par_xi      = 0.8),
+                      stock_list = list(Qv = Qv_0,
+                                        Qd = test_cap_pars$Qd,
+                                        Qk = ct_cap_pars$Qk,
+                                        Qm = Qm_0))
+```
+
+```{r}
+par_tau_v_test <- 0
+
+# Scenarios data frame
+# First scenario: No intervention
+# Second scenario: Testing and Isolation (TI)
+# Third scenario: Contact tracing (CT)
+# Fourth scenario: Mobility restrictions (MR)
+# Fifth scenario: Vaccination (V)
+s_df <- data.frame(Qd         = c(0, Qd_0, Qd_0, 0, 0), 
+                   Qk         = c(0, 0, Qk_0, 0, 0),
+                   Qm         = c(0, 0, 0, Qm_0, 0),
+                   Qv         = c(0, 0, 0, 0, Qv_0),
+                   iter       = 1:5,
+                   itv        = c("Base case", "TI", "CT", "MR", "V"),
+                   par_tau_v  = par_tau_v_test)
+
+sim_output_syn <- sd_sensitivity_run(mdl_sth$deSolve_components, 
+                                     stocks_df  = s_df |> select(-iter, - itv),
+                                     consts_df  = s_df |> select(par_tau_v),
+                                     start_time         = 0,
+                                     stop_time          = 1000,
+                                     timestep           = 1 / 32,
+                                     reporting_interval = 1/ 8,
+                                     multicore = TRUE, n_cores = 5) |> 
+  select(time, iter, C_in, Qv, Qd, Qk, Qm) |> 
+  mutate(model        = "Synthesis") |> 
+  left_join(s_df[, c("iter", "itv")])
+```
+
+```{r}
+mdl_base <- read_xmile("./models/1A_SEI3R.stmx", 
                   const_list = c(bio_params,
                                  par_beta = beta_vals[[2]]))
 temp <- sd_simulate(mdl_base$deSolve_components, 
@@ -139,36 +193,12 @@ temp <- sd_simulate(mdl_base$deSolve_components,
                           timestep = 1 / 32)
 
 sim_output_b <- temp |>   select(time, C_in) |> 
-  mutate(intervention = "No intervention",
-         model        = "Single intervention")
-
-c_ref <- temp |> filter(time == 600) |> pull(C) / pop_val
-
-rm(temp)
+  mutate(itv   = "Base case",
+         model = "Single intervention")
 ```
 
 ```{r}
-mdl_vacc <- read_xmile("./models/02_Vaccines.stmx", 
-                  const_list = c(bio_params,
-                                 par_beta = beta_vals[[2]],
-                                 par_rho_v   = 0.15,
-                                 par_alpha_v = 12.26,
-                                 par_phi     = phi_val,
-                                 par_iota    = iota_v_val),
-                  stock_list = list(Qv = Qv_0))
-
-sim_output_vacc <- sd_simulate(mdl_vacc$deSolve_components, 
-                          start_time = 0,
-                          stop_time = 1000,
-                          timestep = 1 / 32) |> 
-  select(time, C_in) |> 
-  mutate(intervention = "Vaccination",
-         model        = "Single intervention")
-
-```
-
-```{r}
-mdl_test <- read_xmile("./models/03_Testing_Isolation.stmx", 
+mdl_test <- read_xmile("./models/2B_TI_Logistic.stmx", 
                        stock_list = list(Qd = Qd_0),
                        const_list = c(bio_params,
                                       par_beta    = beta_vals[[2]],
@@ -177,17 +207,17 @@ mdl_test <- read_xmile("./models/03_Testing_Isolation.stmx",
                                       par_iota_d  = iota_d_val,
                                       par_delta   = delta_val))
 
-sim_output_test <- sd_simulate(mdl_test$deSolve_components, 
+sim_output_TI <- sd_simulate(mdl_test$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
                           timestep = 1 / 32) |> 
   select(time, C_in) |> 
-  mutate(intervention = "Testing & Isolation",
-         model        = "Single intervention")
+  mutate(itv   = "TI",
+         model = "Single intervention")
 ```
 
 ```{r}
-fp_ct <- "./models/04_Contact_tracing.stmx"
+fp_ct <- "./models/2C_TTI_Logistic.stmx"
 
 mdl_ct       <- read_xmile(fp_ct, stock_list = list(Qd = test_cap_pars$Qd,
                                                  Qk = ct_cap_pars$Qk),
@@ -200,148 +230,186 @@ mdl_ct       <- read_xmile(fp_ct, stock_list = list(Qd = test_cap_pars$Qd,
                                        par_iota_d  = iota_d_val,
                                        par_delta   = delta_val))
 
-sim_output_ct <- sd_simulate(mdl_ct$deSolve_components, 
+sim_output_CT <- sd_simulate(mdl_ct$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
                           timestep = 1 / 32) |> 
   select(time, C_in) |> 
-  mutate(intervention = "Contact tracing",
-         model        = "Single intervention")
+  mutate(itv   = "CT",
+         model = "Single intervention")
 ```
 
 ```{r}
+fp_mob <- "./models/3C_MR.stmx"
+
 mdl_mob <- read_xmile(fp_mob, 
                       const_list = c(bio_params, 
                                      par_zeta_0 = beta_vals[[2]] * 10,
                                      par_tau_m = 0),
-                  stock_list = list(Qm = Qm_0))
+                      stock_list = list(Qm = Qm_0))
 
-sim_output_mob <- sd_simulate(mdl_mob$deSolve_components, 
+sim_output_MR <- sd_simulate(mdl_mob$deSolve_components, 
                           start_time = 0,
                           stop_time = 1000,
                           timestep = 1 / 32) |> 
   select(time, C_in) |> 
-  mutate(intervention = "Social distancing",
+  mutate(itv = "MR",
          model        = "Single intervention")
 ```
 
+```{r}
+v_fp <- "./models/3A_V.stmx"
+mdl_v <- read_xmile(v_fp, 
+                    const_list = c(bio_params,
+                                   par_beta = beta_vals[[2]],
+                                   par_rho_v   = par_rho_v,
+                                   par_alpha_v = par_alpha_v,
+                                   par_phi     = phi_val,
+                                   par_iota    = iota_v_val,
+                                   par_tau_v   = par_tau_v_test),
+                    stock_list = list(Qv = Qv_0))
 
-```{r, fig.cap = "Fig 1. Output comparison", warning = FALSE}
-sgl_int <- bind_rows(sim_output_b, sim_output_vacc, sim_output_test,
-                     sim_output_ct, sim_output_mob)
+sim_output_v <- sd_simulate(mdl_v$deSolve_components, 
+                          start_time = 0,
+                          stop_time = 1000,
+                          timestep = 1 / 32) |> 
+  select(time, C_in) |> 
+  mutate(itv   = "V",
+         model = "Single intervention")
 
-df <- bind_rows(sim_output_syn, sgl_int)
-
-ggplot(df, aes(time, C_in/pop_val)) +
-  geom_line(aes(colour = model, linetype = model), alpha = 0.5, linewidth = 1.5) +
-  facet_wrap(~intervention) +
-  scale_linetype_manual(values = c("solid", "dotdash")) +
-  scale_colour_manual(values = c("grey70", "#0363BB")) +
-  scale_x_continuous(limits = c(0, 150)) +
-  theme_classic() +
-  labs(x = "Day", y = "Incidence rate")
 ```
 
-# Sensitivity analysis
 
-## Exploration space
+```{r, warning = FALSE, fig.height = 8}
+sgl_int <- bind_rows(sim_output_b, sim_output_TI, sim_output_CT, sim_output_MR,
+                     sim_output_v)
+
+df <- bind_rows(sim_output_syn, sgl_int) |> 
+  mutate(itv = factor(itv, levels = c("Base case", "TI", "CT", "MR", "V"),
+                      ordered = TRUE))
+
+plot_output_comparison(df)
+```
+
+# Simulation
+
+This code simulates the comprehensive intervention.
 
 ```{r}
-set.seed(19860618)
-
-n_iters <- 7000
-
-sobol_design(lower = c(par_xi    = 0,
-                       par_tau_m = 0),
-             upper = c(par_xi    = 1,
-                       par_tau_m = 60),
-             nseq = n_iters) -> c_df
+sim_sth <- sd_simulate(mdl_sth$deSolve_components, start_time = 0, 
+                       stop_time = 365, timestep = 1/64, 
+                       integ_method = "euler") |> 
+  filter(time %in% seq(0, 365, 1/8))
 ```
 
-```{r, fig.cap = "Fig 2. Social distancing exploration space"}
-plot(c_df, pch = 16, cex = 0.5, col = "steelblue",
-     xlab = expression(xi), ylab = expression(tau^m))
-```
-
+The code below performs a scenario analysis. In this analysis, we combine two
+levels of vaccination willingness and capacity each, resulting in four 
+scenarios.
 
 ```{r}
-mdl_sens <- read_xmile(fp_synthesis,
-                       const_list = c(bio_params,
-                                     par_zeta_0  = beta_vals[[2]] * 10,
-                                     par_rho_v   = 0.15,
-                                     par_alpha_v = 12.26,
-                                     par_phi     = phi_val,
-                                     par_iota_v  = iota_v_val,
-                                     par_iota_d  = iota_d_val,
-                                     par_delta   = delta_val,
-                                     par_rho_d   = test_cap_pars$rho_d,
-                                     par_alpha_d = test_cap_pars$alpha_d,
-                                     par_rho_k   = ct_cap_pars$rho_k,
-                                     par_alpha_k = ct_cap_pars$alpha_k,
-                                     par_tau_v   = 180),
-                       stock_list = list(Qv = Qv_0,
-                                         Qd = Qd_0,
-                                         Qk = Qk_0,
-                                         Qm = 90))
-```
+iota_v_low  <- 0.45
 
-```{r}
-fn <- str_glue("./saved_objects/model_06.rds")
+# It is assumed that one individual triggers the outbreak
+S1     <- (pop_val - 1) *  iota_v_val # High willingness
+S2     <- (pop_val - 1) *  iota_v_low # Low willingness
+S_vals <- rep(c(S1, S2), each = 2)
+
+Sh1     <- (pop_val - 1) *  (1 - iota_v_val) # High willingness
+Sh2     <- (pop_val - 1) *  (1 - iota_v_low) # Low willingness
+Sh_vals <- rep(c(Sh1, Sh2), each = 2)
+
+# Vaccination scenarios
+vacn_scn <- data.frame(Qv          = rep(c(Qv_0, 12.26), 2),
+                       S           = S_vals,
+                       Sh          = Sh_vals,
+                       par_rho_v   = rep(c(par_rho_v, 0), 2),
+                       par_alpha_v = rep(c(par_alpha_v, 12.26), 2),
+                       cap_scn     = rep(c("C1", "C2"), 2),
+                       wln_scn     = c("High", "High", "Low", "Low")) |> 
+  mutate(iter = row_number())
   
-if(!file.exists(fn)) {
-  
-  tic()
-  
-  sens <- sd_sensitivity_run(mdl_sens$deSolve_components,
-                             consts_df          = c_df,
-                             start_time         = 0,
-                             stop_time          = 600,
-                             timestep           = 1 / 32,
-                             integ_method       = "euler",
-                             multicore          = TRUE,
-                             reporting_interval = 1) |> 
-    select(time, C, C_in, par_xi, par_tau_m) |> 
-      filter(time == 600) |> 
-      mutate(c   = C / pop_val)
-    
-    saveRDS(sens, fn)
-    toc()
-  } else sens <- readRDS(fn)
+
+
+```
+
+```{r}
+vacn_scn |> select(-iter) |> 
+  mutate(across(where(is.numeric),~round(.x, 2)),
+         S  = format(S, big.mark = " "),
+         Sh = format(Sh, big.mark = " ")) |> 
+  gt() |> 
+    cols_label(
+    par_alpha_v      = html("&alpha;<sup>v</sup>"),
+    par_rho_v        = html("&rho;<sup>v</sup>"),
+    Qv               = html("Q<sub>0</sub><sup>v</sup>"),
+    S                = html("S<sub>0</sub>"),
+    Sh               = html("S<sub>0</sub><sup>h</sup>"),
+    cap_scn          = "Capacity scenario",
+    wln_scn          = "Willingness scenario")
 ```
 
 
 ```{r}
-c_star_df <- sens |> mutate(c_star = c/c_ref)
+sim_vacn_scn <- sd_sensitivity_run(mdl_sth$deSolve_components, 
+                              consts_df = dplyr::select(vacn_scn,
+                                                        par_rho_v, par_alpha_v),
+                              stocks_df = dplyr::select(vacn_scn, Qv, S, Sh),
+                              start_time = 0, 
+                              stop_time = 365, timestep = 1/64,
+                              integ_method = "euler",
+                              multicore = TRUE, n_cores = 4) |> 
+  filter(time %in% seq(0, 365, 1/8)) |> 
+  left_join(select(vacn_scn, iter, cap_scn, wln_scn))
 ```
 
+
+For comparison purposes, we recreate the base-case scenario...
 
 ```{r}
-demo_df <- sd_sensitivity_run(mdl_sens$deSolve_components, 
-                   consts_df = data.frame(par_xi = c(0.7, 0), par_tau_m = 35),
-                   start_time = 0, stop_time = 600, timestep = 1 /32, 
-                   multicore = TRUE, n_cores = 2) |> 
-  select(time, iter, Z, var_theta, C_in, k, Dk, S_to_R) |> 
-  mutate(`Contact tracing rate` = k/ Dk,
-         `Incidence rate` = C_in / pop_val,
-         `Vaccination rate` = S_to_R / pop_val) |> 
-  rename(`Testing rate` = var_theta,
-         `Mobility index` = Z) |> 
-  select(-k, -Dk, - C_in, -S_to_R) |> 
-  pivot_longer(c(-time, -iter)) |> 
-  mutate(name = factor(name, levels = c("Mobility index",
-                                        "Incidence rate",
-                                        "Vaccination rate",
-                                        "Testing rate", 
-                                        "Contact tracing rate")),
-         iter = ifelse(iter == 1, "Yes", "No"))
+base_mdl <- read_xmile("./models/1A_SEI3R.stmx", 
+                  const_list = c(bio_params,
+                                 par_beta = beta_vals[[2]]))
+
+
+base_sim <- sd_simulate(base_mdl$deSolve_components,
+                       integ_method = "euler", start_time = 0,
+                       stop_time = 365, timestep = 1 / 64) |>
+  filter(time %in% seq(0, 365, 1/8))
 ```
 
-```{r, warning = FALSE, fig.height = 7, fig.width = 7}
-g <- plot_fig_09(sens_mob, c_star_df, demo_df, sim_output_b)
+and the TTI + MR scenario.
 
-ggsave("./plots/Fig_09_Social_distancing.pdf", plot = g, 
+```{r}
+mdl_npi_fp <- "./models/2F_TTI_PLUS_MR.stmx"
+
+mdl_npi <- read_xmile(mdl_npi_fp,
+                         const_list  = c(bio_params,
+                           par_zeta_0  = zeta_val,
+                           par_alpha_d = test_cap_pars$alpha_d,
+                           par_alpha_k = ct_cap_pars$alpha_k,
+                           par_rho_d   = test_cap_pars$rho_d,
+                           par_rho_k   = ct_cap_pars$rho_k,
+                           par_tau_m   = par_tau_m,
+                           par_xi      = 0.8,
+                           par_iota_d  = iota_d_val,
+                           par_delta   = delta_val),
+                         stock_list = list(
+                           Qd = test_cap_pars$Qd,
+                           Qk = ct_cap_pars$Qk,
+                           Qm = 90))
+
+sim_npi <- sd_simulate(mdl_npi$deSolve_components, start_time = 0,
+                       stop_time = 365, timestep = 1/64,
+                       integ_method = "euler") |>
+  filter(time %in% seq(0, 365, 1/8))
+```
+
+```{r, fig.height = 7}
+g <- plot_fig_11(sim_sth, base_sim, sim_npi, sim_vacn_scn)
+
+ggsave("./plots/Fig_11_Vaccination_sim.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
 
+g
 ```
-
 

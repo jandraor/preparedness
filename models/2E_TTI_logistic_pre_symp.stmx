@@ -1,0 +1,1580 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>04d_Contact_tracing_test_pre_symp</name>
+		<uuid>10d526ce-b9f8-458c-9d99-84379d39a4a1</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="3.0" isee:build_number="2658" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:sim_duration="1.5" isee:run_prefix="Run" isee:simulation_delay="0.005" isee:restore_on_start="false" method="Euler" time_units="Days" isee:instantaneous_flows="false" isee:ignore_module_errors="false" isee:loop_scores="false" isee:loop_exhaustive_allowed="1000">
+		<start>0</start>
+		<stop>300</stop>
+		<dt reciprocal="true">32</dt>
+	</sim_specs>
+	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" isee:design="Deluxe Prev-Next Blue Green Pastel" isee:design_custom="false" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" model_stops_when_players_drop="false" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format/>
+	<model_units>
+		<unit name="People">
+			<eqn/>
+			<alias>person</alias>
+			<alias>persons</alias>
+		</unit>
+		<unit name="Days">
+			<eqn/>
+			<alias>day</alias>
+		</unit>
+		<unit name="Patient">
+			<eqn>People</eqn>
+			<alias>Patients</alias>
+		</unit>
+		<unit name="PPE Set">
+			<eqn/>
+			<alias>PPE Sets</alias>
+		</unit>
+		<unit name="Bed">
+			<eqn/>
+			<alias>Beds</alias>
+		</unit>
+		<unit name="ICU Bed">
+			<eqn/>
+			<alias>ICU Beds</alias>
+		</unit>
+		<unit name="kilowatt hours per day">
+			<eqn>kWh/day</eqn>
+		</unit>
+		<unit name="kilowatts">
+			<eqn>kW</eqn>
+			<alias>kilowatt</alias>
+		</unit>
+		<unit name="Dimensionless">
+			<eqn>1</eqn>
+			<alias>dmnl</alias>
+			<alias>unitless</alias>
+		</unit>
+		<unit name="Staff">
+			<eqn>People</eqn>
+			<alias>Nurse</alias>
+			<alias>Nurses</alias>
+			<alias>ICU Nurse</alias>
+			<alias>ICU Nurses</alias>
+			<alias>Physician</alias>
+			<alias>Physicians</alias>
+		</unit>
+	</model_units>
+	<model>
+		<variables>
+			<stock name="S">
+				<eqn>N - P0</eqn>
+				<inflow>Sq_to_S</inflow>
+				<outflow>S_to_E</outflow>
+				<outflow>S_to_Sq</outflow>
+				<outflow>S_to_Eq</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="E">
+				<eqn>0</eqn>
+				<inflow>S_to_E</inflow>
+				<outflow>E_to_P</outflow>
+				<outflow>E_to_A</outflow>
+				<outflow>E_to_Pd</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="P">
+				<eqn>1</eqn>
+				<inflow>E_to_P</inflow>
+				<outflow>P_to_I</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="I">
+				<eqn>0</eqn>
+				<inflow>P_to_I</inflow>
+				<outflow>I_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="R">
+				<eqn>0</eqn>
+				<inflow>I_to_R</inflow>
+				<inflow>A_to_R</inflow>
+				<inflow>Id_to_R</inflow>
+				<inflow>Iq_to_R</inflow>
+				<inflow>Aq_to_R</inflow>
+				<units>People</units>
+			</stock>
+			<flow name="S to E">
+				<eqn>S * lambda</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="E to P">
+				<eqn>(1- var_theta) * par_omega * par_sigma* E</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="P to I">
+				<eqn>par_nu * P</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="I to R">
+				<eqn>par_gamma * I</eqn>
+				<units>people/day</units>
+			</flow>
+			<stock name="A">
+				<eqn>0</eqn>
+				<inflow>E_to_A</inflow>
+				<outflow>A_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="E to A">
+				<eqn>(1 - par_omega) * par_sigma *E</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="A to R">
+				<eqn>par_kappa * A</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="par gamma">
+				<eqn>0.5</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="N">
+				<eqn>17475415</eqn>
+				<units>People</units>
+			</aux>
+			<aux name="lambda">
+				<eqn>lambda_A + lambda_Aq + lambda_I + lambda_Id + lambda_Iq + lambda_P + lambda_Pd + lambda_Pq</eqn>
+				<isee:summing/>
+				<units>1/day</units>
+			</aux>
+			<aux name="par sigma">
+				<eqn>1/2</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par omega">
+				<eqn>0.84</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<aux name="P0">
+				<eqn>1</eqn>
+				<units>People</units>
+			</aux>
+			<aux name="par nu">
+				<eqn>1</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par kappa">
+				<eqn>1/5</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par eta">
+				<doc>Relative infectiousness</doc>
+				<eqn>0.5</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<stock name="C">
+				<eqn>P0</eqn>
+				<inflow>C_in</inflow>
+				<units>People</units>
+			</stock>
+			<flow name="C in">
+				<eqn>S_to_E + S_to_Eq</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="var beta">
+				<eqn>par_zeta * par_upsilon</eqn>
+				<units>1/day</units>
+			</aux>
+			<stock name="Id">
+				<eqn>0</eqn>
+				<inflow>Pd_to_Id</inflow>
+				<outflow>Id_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Pd to Id">
+				<eqn>par_nu * Pd</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="Id to R">
+				<eqn>par_gamma * Id</eqn>
+				<units>people/day</units>
+			</flow>
+			<stock name="Pd">
+				<eqn>0</eqn>
+				<inflow>E_to_Pd</inflow>
+				<outflow>Pd_to_Id</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="E to Pd">
+				<eqn>var_theta * par_omega * par_sigma * E</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="var theta">
+				<eqn>IF Dd = 0 
+THEN 0  
+ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<flow name="Change Qd">
+				<doc>Adjust testing capacity</doc>
+				<eqn>par_rho_d * Qd * (1 - (Qd/par_alpha_d))</eqn>
+				<units>people/day/Days</units>
+			</flow>
+			<aux name="par alpha d">
+				<doc>Long-term testing capacity</doc>
+				<eqn>100</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="par rho d">
+				<doc>Unconstrained growth of vaccination capacity. Rough estimate from the Netherlands: 0.017</doc>
+				<eqn>0.15</eqn>
+				<units>1/day</units>
+			</aux>
+			<stock name="Qd">
+				<doc>Testing capacity</doc>
+				<eqn>100</eqn>
+				<inflow>Change_Qd</inflow>
+				<units>people/day</units>
+			</stock>
+			<aux name="testing supply">
+				<doc>Number of tested people given supply &amp; demand.</doc>
+				<eqn>Qd * N / scaler</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="Dd">
+				<doc>Testing demand</doc>
+				<eqn>par_omega * par_sigma *E</eqn>
+				<units>People/day</units>
+			</aux>
+			<stock name="Sq">
+				<eqn>0</eqn>
+				<inflow>S_to_Sq</inflow>
+				<outflow>Sq_to_S</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Sq to S">
+				<eqn>Sq / (1 / par_sigma + 1 / par_gamma + 1 / par_nu)</eqn>
+				<units>People/day</units>
+			</flow>
+			<flow name="S to Sq">
+				<eqn>var_mu_s * S</eqn>
+				<units>People/day</units>
+			</flow>
+			<flow name="S to Eq">
+				<eqn>var_mu_i * S</eqn>
+				<units>People/day</units>
+			</flow>
+			<stock name="Eq">
+				<eqn>0</eqn>
+				<inflow>S_to_Eq</inflow>
+				<outflow>Eq_to_Iq</outflow>
+				<outflow>Eq_to_Aq</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Eq to Iq">
+				<eqn>par_omega * par_sigma * Eq</eqn>
+				<units>People/day</units>
+			</flow>
+			<stock name="Pq">
+				<eqn>0</eqn>
+				<inflow>Eq_to_Iq</inflow>
+				<outflow>Pq_to_Iq</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Iq to R">
+				<eqn>par_gamma * Iq</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="var mu i">
+				<doc>Rate at which infected susceptible individuals are contact traced.</doc>
+				<eqn>par_upsilon * var_zeta_k * Pd  / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par zeta">
+				<eqn>10.86957</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par upsilon">
+				<doc>Probability of Infection</doc>
+				<eqn>0.1</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<stock name="Qk">
+				<doc>Daily capacity to track close contacts of detected infectious individuals. </doc>
+				<eqn>0.05331</eqn>
+				<inflow>Change_Qk</inflow>
+				<units>people/day</units>
+			</stock>
+			<flow name="Change Qk">
+				<doc>Adjust contact tracing capacity</doc>
+				<eqn>par_rho_k * Qk * (1 - (Qk/par_alpha_k))</eqn>
+				<units>people/day/Days</units>
+			</flow>
+			<aux name="par alpha k">
+				<doc>Long-term contact tracing capacity.</doc>
+				<eqn>50</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="par rho k">
+				<doc>Unconstrained growth of contact tracing capacity.</doc>
+				<eqn>0.5</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="k">
+				<doc>Number of contact-traced people given supply &amp; demand.</doc>
+				<eqn>MIN(Dk,  contact_tracing_supply)</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="contact tracing\nsupply">
+				<doc>Contact tracing supply</doc>
+				<eqn>Qk * N / scaler</eqn>
+				<units>people/day</units>
+			</aux>
+			<aux name="var mu s">
+				<doc>Rate at which non-infected susceptible individuals are contact traced.</doc>
+				<eqn>(1 - par_upsilon) * var_zeta_k * Pd / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda Pd">
+				<eqn>(1 - par_iota_d) * par_upsilon * (par_zeta - var_zeta_k) * Pd / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda P">
+				<eqn>var_beta * P / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda Id">
+				<eqn>(1 - par_iota_d) * var_beta * Id / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda I">
+				<eqn>var_beta * I / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda Iq">
+				<eqn> (1 - par_iota_d) * var_beta  * Iq /N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="par iota d">
+				<eqn>0.51</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<aux name="lambda A">
+				<eqn>par_eta * var_beta * A /N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="scaler">
+				<eqn>1000</eqn>
+				<units>People</units>
+			</aux>
+			<aux name="par delta">
+				<doc>Percentage of clinical individuals that seek a diagnostic test
+
+Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
+				<eqn>0.6</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<flow name="Eq to Aq">
+				<eqn>(1 - par_omega) * par_sigma * Eq</eqn>
+				<units>people/day</units>
+			</flow>
+			<stock name="Aq">
+				<eqn>0</eqn>
+				<inflow>Eq_to_Aq</inflow>
+				<outflow>Aq_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<stock name="Iq">
+				<eqn>0</eqn>
+				<inflow>Pq_to_Iq</inflow>
+				<outflow>Iq_to_R</outflow>
+				<units>People</units>
+			</stock>
+			<flow name="Pq to Iq">
+				<eqn>par_nu * Pq</eqn>
+				<units>people/day</units>
+			</flow>
+			<flow name="Aq to R">
+				<eqn>par_kappa *Aq</eqn>
+				<units>people/day</units>
+			</flow>
+			<aux name="lambda Pq">
+				<eqn>(1 - par_iota_d) * var_beta *Pq / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="lambda Aq">
+				<eqn>(1 - par_iota_d) * var_beta * par_eta * Aq / N</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="var zeta k">
+				<eqn>IF Pd = 0
+THEN 0
+ELSE (k/Pd)</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="Dk">
+				<doc>Contact tracing demand</doc>
+				<eqn>par_zeta * Pd</eqn>
+				<units>People/day</units>
+			</aux>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="white" background="white" font_size="12pt" border_width="thin" border_style="solid" isee:transparent="false" isee:show_divider="true" isee:show_bounding_box="true" label_side="left"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_corner_radius="0" popup_background_color="#FFFECF"/>
+				<slider color="#66CC66" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:fancy_appearance="false" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:dual_slider color="#66CC66" background="silver" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="#E95F74" background="silver"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch" isee:on_color="green"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt" isee:show_hover_tip="true"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+				<isee:navigation_widget color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" padding="6 8" border_color="#999999" border_width="thin" border_style="solid" item_spacing="6" appearance="tabs" corner_radius="4" selected_item_color="black" selected_item_background="white" item_background="#DDDDDD" transparent_bg="false"/>
+				<isee:shape color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid" opacity="1" transparent_background="true" corner_radius="1"/>
+				<isee:selector color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
+				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+			</style>
+			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="2" isee:page_rows="5" isee:scroll_x="208.571" isee:scroll_y="214.286" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="9pt" label_side="bottom"/>
+					<isee:placeholder color="#228B22" background="white" font_color="#228B22" font_size="9pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="9pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="9pt"/>
+					<connector color="#E6E6E6" background="white" font_color="#E6E6E6" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="white" background="white" font_size="12pt" border_width="thin" border_style="solid" isee:transparent="false" isee:show_divider="true" isee:show_bounding_box="true" label_side="left"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="281.714" y="572.571" name="S"/>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="425.714" y="572.571" name="E"/>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="551.714" y="572.571" name="P"/>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="675.714" y="572.571" name="I"/>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="819.714" y="572.571" name="R"/>
+				<flow color="#797979" font_color="#797979" x="353.714" y="572.571" name="S to E">
+					<pts>
+						<pt x="304.214" y="572.571"/>
+						<pt x="403.214" y="572.571"/>
+					</pts>
+				</flow>
+				<flow color="#797979" font_color="#797979" x="488.714" y="572.571" name="E to P">
+					<pts>
+						<pt x="448.214" y="572.571"/>
+						<pt x="529.214" y="572.571"/>
+					</pts>
+				</flow>
+				<flow color="#797979" font_color="#797979" x="613.714" y="572.571" name="P to I">
+					<pts>
+						<pt x="574.214" y="572.571"/>
+						<pt x="653.214" y="572.571"/>
+					</pts>
+				</flow>
+				<flow color="#797979" font_color="#797979" x="747.714" y="572.571" name="I to R">
+					<pts>
+						<pt x="698.214" y="572.571"/>
+						<pt x="797.214" y="572.571"/>
+					</pts>
+				</flow>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="616.714" y="683.571" name="A"/>
+				<flow color="#797979" font_color="#797979" x="494.464" y="674.571" width="18" height="18" name="E to A">
+					<pts>
+						<pt x="424.714" y="590.071"/>
+						<pt x="424.714" y="683.571"/>
+						<pt x="594.214" y="683.571"/>
+					</pts>
+				</flow>
+				<flow color="#797979" font_color="#797979" x="734.964" y="683.571" name="A to R">
+					<pts>
+						<pt x="639.214" y="683.571"/>
+						<pt x="818.714" y="683.571"/>
+						<pt x="818.714" y="590.071"/>
+					</pts>
+				</flow>
+				<aux color="#797979" font_color="#797979" x="722.089" y="514.571" width="51.25" height="14" name="par gamma">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="1" angle="270">
+					<from>par_gamma</from>
+					<to>I_to_R</to>
+				</connector>
+				<connector uid="2" angle="31.139">
+					<from>I</from>
+					<to>I_to_R</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="976.429" y="279.143" width="12.25" height="14" name="N">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" x="353.714" y="477.714" name="lambda"/>
+				<connector uid="3" angle="270">
+					<from>lambda</from>
+					<to>S_to_E</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="511.089" y="618.571" width="45.25" height="14" name="par sigma">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="7" angle="130.333">
+					<from>par_sigma</from>
+					<to>E_to_P</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="369.589" y="650.071" width="49.25" height="14" name="par omega">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="8" angle="346.366">
+					<from>par_omega</from>
+					<to>E_to_A</to>
+				</connector>
+				<connector uid="9" angle="41.8024">
+					<from>par_omega</from>
+					<to>E_to_P</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="548.5" y="782" name="P0"/>
+				<connector uid="10" angle="29.7449">
+					<from>P</from>
+					<to>P_to_I</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="598.089" y="514.571" width="31.25" height="14" name="par nu">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="11" angle="270">
+					<from>par_nu</from>
+					<to>P_to_I</to>
+				</connector>
+				<connector uid="12" angle="27.0309">
+					<from>A</from>
+					<to>A_to_R</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="669.589" y="712.571" width="46.25" height="14" name="par kappa">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="13" angle="40.4334">
+					<from>par_kappa</from>
+					<to>A_to_R</to>
+				</connector>
+				<connector uid="14" angle="26.5651">
+					<from>S</from>
+					<to>S_to_E</to>
+				</connector>
+				<connector uid="15" angle="25.1448">
+					<from>E</from>
+					<to>E_to_P</to>
+				</connector>
+				<connector uid="16" angle="337.797">
+					<from>E</from>
+					<to>E_to_A</to>
+				</connector>
+				<connector uid="17" angle="242.456">
+					<from>par_sigma</from>
+					<to>E_to_A</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1095.02" y="649.429" width="34.25" height="14" name="par eta">
+					<shape type="name_only"/>
+				</aux>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="427.786" y="742.286" name="C"/>
+				<flow color="#797979" font_color="#797979" x="348.286" y="742.286" name="C in">
+					<pts>
+						<pt x="279.286" y="742.286"/>
+						<pt x="405.286" y="742.286"/>
+					</pts>
+				</flow>
+				<connector uid="20" angle="268.168">
+					<from>S_to_E</from>
+					<to>C_in</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1208.07" y="486.714" width="38.25" height="14" name="var beta">
+					<shape type="name_only"/>
+				</aux>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="675.714" y="480.071" name="Id"/>
+				<flow color="#919191" font_color="#919191" label_side="top" x="612.214" y="480.071" name="Pd to Id">
+					<pts>
+						<pt x="571.214" y="480.071"/>
+						<pt x="653.214" y="480.071"/>
+					</pts>
+				</flow>
+				<flow color="#919191" font_color="#919191" label_side="top" x="756.536" y="480.571" name="Id to R">
+					<pts>
+						<pt x="698.214" y="480.571"/>
+						<pt x="802.857" y="480.571"/>
+						<pt x="802.857" y="555.071"/>
+					</pts>
+				</flow>
+				<connector uid="23" angle="77.8575">
+					<from>par_gamma</from>
+					<to>Id_to_R</to>
+				</connector>
+				<connector uid="24" angle="28.4052">
+					<from>Id</from>
+					<to>Id_to_R</to>
+				</connector>
+				<connector uid="25" angle="92.07">
+					<from>par_nu</from>
+					<to>Pd_to_Id</to>
+				</connector>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="548.714" y="480.071" name="Pd"/>
+				<connector uid="26" angle="33.2749">
+					<from>Pd</from>
+					<to>Pd_to_Id</to>
+				</connector>
+				<flow color="#797979" font_color="#797979" x="470.964" y="480.571" name="E to Pd">
+					<pts>
+						<pt x="427.714" y="555.071"/>
+						<pt x="427.714" y="480.571"/>
+						<pt x="526.214" y="480.571"/>
+					</pts>
+				</flow>
+				<connector uid="32" angle="270">
+					<from>
+						<alias uid="33"/>
+					</from>
+					<to>E_to_Pd</to>
+				</connector>
+				<connector uid="31" angle="147.584">
+					<from>
+						<alias uid="30"/>
+					</from>
+					<to>E_to_Pd</to>
+				</connector>
+				<connector uid="29" angle="114.092">
+					<from>E</from>
+					<to>E_to_Pd</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" label_side="right" x="232.41" y="257.714" name="var theta"/>
+				<connector uid="35" angle="297.674">
+					<from>
+						<alias uid="36"/>
+					</from>
+					<to>E_to_P</to>
+				</connector>
+				<flow color="#797979" font_color="#797979" label_side="top" x="143.976" y="72.5956" name="Change Qd">
+					<pts>
+						<pt x="66.3099" y="72.5956"/>
+						<pt x="209.643" y="72.5956"/>
+					</pts>
+				</flow>
+				<aux color="#797979" font_color="#797979" label_side="top" x="29.8509" y="13.2616" width="51.25" height="14" name="par alpha d">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="38" angle="329.402">
+					<from>par_alpha_d</from>
+					<to>Change_Qd</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" label_side="bottom" x="34.3509" y="119.096" width="42.25" height="14" name="par rho d">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="39" angle="31.1538">
+					<from>par_rho_d</from>
+					<to>Change_Qd</to>
+				</connector>
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="232.143" y="72.5956" name="Qd"/>
+				<connector uid="40" angle="209.713">
+					<from>Qd</from>
+					<to>Change_Qd</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="232.41" y="177.143" name="testing supply"/>
+				<aux color="#797979" font_color="#797979" label_side="bottom" x="160" y="259.143" name="Dd"/>
+				<connector uid="72" angle="333.335">
+					<from>
+						<alias uid="67"/>
+					</from>
+					<to>Dd</to>
+				</connector>
+				<connector uid="73" angle="0">
+					<from>
+						<alias uid="69"/>
+					</from>
+					<to>Dd</to>
+				</connector>
+				<connector uid="74" angle="22.4428">
+					<from>
+						<alias uid="71"/>
+					</from>
+					<to>Dd</to>
+				</connector>
+				<connector uid="75" angle="1.13023">
+					<from>Dd</from>
+					<to>var_theta</to>
+				</connector>
+				<connector uid="76" angle="270">
+					<from>testing_supply</from>
+					<to>var_theta</to>
+				</connector>
+				<connector uid="77" angle="270.146">
+					<from>Qd</from>
+					<to>testing_supply</to>
+				</connector>
+				<stock color="#0433FF" font_color="#0433FF" label_side="center" x="131.429" y="572.571" name="Sq"/>
+				<flow color="#0433FF" font_color="#0433FF" label_side="top" x="206.572" y="557.321" name="Sq to S">
+					<pts>
+						<pt x="153.929" y="557.321"/>
+						<pt x="259.214" y="557.321"/>
+					</pts>
+				</flow>
+				<flow color="#0433FF" font_color="#0433FF" x="206.572" y="587.821" name="S to Sq">
+					<pts>
+						<pt x="259.214" y="587.821"/>
+						<pt x="153.929" y="587.821"/>
+					</pts>
+				</flow>
+				<connector uid="82" angle="95.9469">
+					<from>Sq</from>
+					<to>Sq_to_S</to>
+				</connector>
+				<connector uid="83" angle="270">
+					<from>
+						<alias uid="84"/>
+					</from>
+					<to>Sq_to_S</to>
+				</connector>
+				<connector uid="87" angle="229.015">
+					<from>
+						<alias uid="86"/>
+					</from>
+					<to>Sq_to_S</to>
+				</connector>
+				<connector uid="88" angle="314.249">
+					<from>
+						<alias uid="85"/>
+					</from>
+					<to>Sq_to_S</to>
+				</connector>
+				<flow color="#0433FF" font_color="#0433FF" label_side="top" x="336.322" y="370.786" name="S to Eq">
+					<pts>
+						<pt x="281.429" y="555.071"/>
+						<pt x="281.429" y="370.786"/>
+						<pt x="403.214" y="370.786"/>
+					</pts>
+				</flow>
+				<stock color="#0433FF" font_color="#0433FF" label_side="center" x="425.714" y="370.786" name="Eq"/>
+				<flow color="#0433FF" font_color="#0433FF" label_side="top" x="514.285" y="369.893" name="Eq to Iq">
+					<pts>
+						<pt x="448.214" y="369.893"/>
+						<pt x="580.357" y="369.893"/>
+					</pts>
+				</flow>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="602.857" y="369" name="Pq"/>
+				<flow color="#0433FF" font_color="#0433FF" label_side="top" x="787.25" y="367.143" name="Iq to R">
+					<pts>
+						<pt x="743.214" y="367.143"/>
+						<pt x="819.286" y="367.143"/>
+						<pt x="819.286" y="555.071"/>
+					</pts>
+				</flow>
+				<connector uid="89" angle="243.153">
+					<from>S</from>
+					<to>S_to_Sq</to>
+				</connector>
+				<connector uid="92" angle="35.2759">
+					<from>Eq</from>
+					<to>Eq_to_Iq</to>
+				</connector>
+				<connector uid="96" angle="125.516">
+					<from>S</from>
+					<to>S_to_Eq</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="72.7028" y="921.595" width="38.25" height="14" name="var mu i">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" x="1204.87" y="453.857" width="38.25" height="14" name="par zeta">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="98" angle="275.563">
+					<from>par_zeta</from>
+					<to>var_beta</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1202.07" y="518.857" width="50.25" height="14" name="par upsilon">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="99" angle="90">
+					<from>par_upsilon</from>
+					<to>var_beta</to>
+				</connector>
+				<stock color="#0433FF" font_color="#0433FF" label_side="center" x="413.381" y="977.5" name="Qk"/>
+				<flow color="#0433FF" background="white" font_color="#0433FF" x="316.548" y="977.5" name="Change Qk">
+					<pts>
+						<pt x="230.214" y="977.5"/>
+						<pt x="390.881" y="977.5"/>
+					</pts>
+				</flow>
+				<aux color="#797979" font_color="#797979" label_side="top" x="340.631" y="1009" width="50.25" height="14" name="par alpha k">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" x="233.732" y="995" width="41.25" height="14" name="par rho k">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="104" angle="141.961">
+					<from>par_alpha_k</from>
+					<to>Change_Qk</to>
+				</connector>
+				<connector uid="105" angle="21.5018">
+					<from>par_rho_k</from>
+					<to>Change_Qk</to>
+				</connector>
+				<connector uid="106" angle="155.532">
+					<from>Qk</from>
+					<to>Change_Qk</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" label_side="right" label_angle="45" x="248.732" y="811.762" width="11.25" height="14" name="k">
+					<shape type="name_only"/>
+				</aux>
+				<aux color="#797979" font_color="#797979" label_side="right" label_angle="315" x="316.256" y="860.881" width="64.25" height="26" name="contact tracing\nsupply">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="120" angle="122.1">
+					<from>Qk</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<connector uid="121" angle="149.62">
+					<from>contact_tracing_supply</from>
+					<to>k</to>
+				</connector>
+				<connector uid="135" angle="314.149">
+					<from>
+						<alias uid="136"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="137" angle="180">
+					<from>
+						<alias uid="138"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="139" angle="232.276">
+					<from>
+						<alias uid="140"/>
+					</from>
+					<to>S_to_Eq</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="46.4528" y="769.738" width="40.25" height="14" name="var mu s">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="141" angle="63.5004">
+					<from>
+						<alias uid="136"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="145" angle="134.607">
+					<from>
+						<alias uid="144"/>
+					</from>
+					<to>S_to_Sq</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1027.52" y="381.714" width="49.25" height="14" name="lambda Pd">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="152" angle="328.017">
+					<from>
+						<alias uid="153"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1023.59" y="279.143" width="44.25" height="14" name="lambda P">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="165" angle="270">
+					<from>
+						<alias uid="164"/>
+					</from>
+					<to>lambda_P</to>
+				</connector>
+				<connector uid="166" angle="180">
+					<from>
+						<alias uid="167"/>
+					</from>
+					<to>lambda_P</to>
+				</connector>
+				<connector uid="170" angle="83.8232">
+					<from>
+						<alias uid="36"/>
+					</from>
+					<to>E_to_Pd</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1033.8" y="453.286" width="45.25" height="14" name="lambda Id">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="171" angle="0">
+					<from>
+						<alias uid="172"/>
+					</from>
+					<to>lambda_Id</to>
+				</connector>
+				<connector uid="173" angle="179.574">
+					<from>
+						<alias uid="174"/>
+					</from>
+					<to>lambda_Id</to>
+				</connector>
+				<connector uid="177" angle="26.9584">
+					<from>
+						<alias uid="178"/>
+					</from>
+					<to>lambda_Id</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1044.87" y="534.786" width="40.25" height="14" name="lambda I">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="182" angle="0">
+					<from>
+						<alias uid="183"/>
+					</from>
+					<to>lambda_I</to>
+				</connector>
+				<connector uid="184" angle="180.001">
+					<from>
+						<alias uid="181"/>
+					</from>
+					<to>lambda_I</to>
+				</connector>
+				<connector uid="185" angle="90">
+					<from>
+						<alias uid="186"/>
+					</from>
+					<to>lambda_I</to>
+				</connector>
+				<aux color="#0433FF" font_color="#0433FF" x="1032.37" y="854.143" width="45.25" height="14" name="lambda Iq">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="191" angle="1.13536">
+					<from>
+						<alias uid="192"/>
+					</from>
+					<to>lambda_Iq</to>
+				</connector>
+				<connector uid="197" angle="135.222">
+					<from>
+						<alias uid="198"/>
+					</from>
+					<to>lambda_Iq</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1034.8" y="497.571" width="43.25" height="14" name="par iota d">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="195" angle="38.6837">
+					<from>
+						<alias uid="196"/>
+					</from>
+					<to>lambda_Iq</to>
+				</connector>
+				<connector uid="201" angle="90">
+					<from>par_iota_d</from>
+					<to>lambda_Id</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="1041.64" y="611.571" width="43.25" height="14" name="lambda A">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="202" angle="184.025">
+					<from>
+						<alias uid="203"/>
+					</from>
+					<to>lambda_A</to>
+				</connector>
+				<connector uid="204" angle="0">
+					<from>
+						<alias uid="205"/>
+					</from>
+					<to>lambda_A</to>
+				</connector>
+				<connector uid="206" angle="45.234">
+					<from>
+						<alias uid="207"/>
+					</from>
+					<to>lambda_A</to>
+				</connector>
+				<connector uid="208" angle="142.242">
+					<from>par_eta</from>
+					<to>lambda_A</to>
+				</connector>
+				<connector uid="211" angle="0">
+					<from>N</from>
+					<to>lambda_P</to>
+				</connector>
+				<connector uid="217" angle="236.145">
+					<from>
+						<alias uid="218"/>
+					</from>
+					<to>Eq_to_Iq</to>
+				</connector>
+				<connector uid="219" angle="30.2385">
+					<from>
+						<alias uid="138"/>
+					</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<connector uid="221" angle="181.847">
+					<from>
+						<alias uid="220"/>
+					</from>
+					<to>testing_supply</to>
+				</connector>
+				<stacked_container uid="233" x="281.953" y="1220">
+					<graph width="350" height="250" comparative="true" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="contact_tracing_supply"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux color="#797979" font_color="#797979" x="276.179" y="118.857" width="30.25" height="14" name="scaler">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="234" angle="217.767">
+					<from>scaler</from>
+					<to>testing_supply</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" x="211.785" y="299.714" width="41.25" height="14" name="par delta">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="235" angle="90">
+					<from>par_delta</from>
+					<to>var_theta</to>
+				</connector>
+				<connector uid="236" angle="180">
+					<from>
+						<alias uid="237"/>
+					</from>
+					<to>contact_tracing_supply</to>
+				</connector>
+				<stacked_container uid="245" x="164.286" y="1905" width="350" height="250">
+					<graph width="350" height="250" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="k"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<stacked_container uid="246" x="724.286" y="1175.71" width="350" height="250">
+					<graph width="350" height="250" comparative="true" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="C"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<stacked_container uid="247" x="734.964" y="1025.71">
+					<table width="350" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="contact_tracing_supply"/>
+						</item>
+						<item>
+							<entity name="Dk"/>
+						</item>
+					</table>
+				</stacked_container>
+				<connector uid="248" angle="34.3333">
+					<from>
+						<alias uid="249"/>
+					</from>
+					<to>C_in</to>
+				</connector>
+				<flow label_side="top" x="500.393" y="271.5" name="Eq to Aq">
+					<pts>
+						<pt x="438.571" y="353.286"/>
+						<pt x="438.571" y="271.5"/>
+						<pt x="574.214" y="271.5"/>
+					</pts>
+				</flow>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="596.714" y="275.786" name="Aq"/>
+				<connector uid="252" angle="69.3718">
+					<from>Eq</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<connector uid="253" angle="72.2157">
+					<from>
+						<alias uid="251"/>
+					</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<connector uid="254" angle="301.161">
+					<from>
+						<alias uid="251"/>
+					</from>
+					<to>Eq_to_Iq</to>
+				</connector>
+				<connector uid="255" angle="125.237">
+					<from>
+						<alias uid="218"/>
+					</from>
+					<to>Eq_to_Aq</to>
+				</connector>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="720.714" y="369" name="Iq"/>
+				<flow x="661.786" y="369" name="Pq to Iq">
+					<pts>
+						<pt x="625.357" y="369"/>
+						<pt x="698.214" y="369"/>
+					</pts>
+				</flow>
+				<connector uid="256" angle="27.943">
+					<from>Pq</from>
+					<to>Pq_to_Iq</to>
+				</connector>
+				<connector uid="257" angle="55.1538">
+					<from>Iq</from>
+					<to>Iq_to_R</to>
+				</connector>
+				<flow x="732.393" y="273.571" name="Aq to R">
+					<pts>
+						<pt x="619.214" y="273.571"/>
+						<pt x="833.571" y="273.571"/>
+						<pt x="833.571" y="555.071"/>
+					</pts>
+				</flow>
+				<connector uid="258" angle="41.1006">
+					<from>Aq</from>
+					<to>Aq_to_R</to>
+				</connector>
+				<connector uid="259" angle="69.444">
+					<from>
+						<alias uid="260"/>
+					</from>
+					<to>Iq_to_R</to>
+				</connector>
+				<connector uid="261" angle="277.275">
+					<from>
+						<alias uid="262"/>
+					</from>
+					<to>Pq_to_Iq</to>
+				</connector>
+				<connector uid="263" angle="237.771">
+					<from>
+						<alias uid="264"/>
+					</from>
+					<to>Aq_to_R</to>
+				</connector>
+				<aux x="1036.09" y="699.429" width="49.25" height="14" name="lambda Pq">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="265" angle="180">
+					<from>
+						<alias uid="266"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="267" angle="3.7384">
+					<from>
+						<alias uid="268"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="269" angle="31.463">
+					<from>
+						<alias uid="270"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<aux x="1036.59" y="772.286" width="48.25" height="14" name="lambda Aq">
+					<shape type="name_only"/>
+				</aux>
+				<connector uid="271" angle="176.698">
+					<from>
+						<alias uid="272"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="274" angle="28.0725">
+					<from>
+						<alias uid="275"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="276" angle="0">
+					<from>
+						<alias uid="273"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="277" angle="152.849">
+					<from>
+						<alias uid="278"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<connector uid="279" angle="179.427">
+					<from>
+						<alias uid="280"/>
+					</from>
+					<to>lambda_Iq</to>
+				</connector>
+				<stacked_container uid="281" x="675.714" y="1747.14" width="350" height="250">
+					<graph width="350" height="250" comparative="true" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="Sq"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<connector uid="285" angle="242.85">
+					<from>
+						<alias uid="286"/>
+					</from>
+					<to>lambda_Pq</to>
+				</connector>
+				<connector uid="287" angle="228.918">
+					<from>
+						<alias uid="288"/>
+					</from>
+					<to>lambda_Aq</to>
+				</connector>
+				<aux x="160.988" y="823.429" name="var zeta k"/>
+				<connector uid="289" angle="13.7927">
+					<from>
+						<alias uid="130"/>
+					</from>
+					<to>var_zeta_k</to>
+				</connector>
+				<connector uid="290" angle="182.862">
+					<from>k</from>
+					<to>var_zeta_k</to>
+				</connector>
+				<connector uid="291" angle="236.67">
+					<from>var_zeta_k</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="292" angle="283.418">
+					<from>
+						<alias uid="130"/>
+					</from>
+					<to>var_mu_i</to>
+				</connector>
+				<connector uid="293" angle="153.685">
+					<from>var_zeta_k</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="294" angle="94.4835">
+					<from>
+						<alias uid="130"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<aux color="#797979" font_color="#797979" label_side="center" x="245.018" y="847.881" width="19" height="19" name="Dk"/>
+				<connector uid="132" angle="90">
+					<from>
+						<alias uid="133"/>
+					</from>
+					<to>Dk</to>
+				</connector>
+				<connector uid="107" angle="90.2384">
+					<from>Dk</from>
+					<to>k</to>
+				</connector>
+				<connector uid="296" angle="277.29">
+					<from>
+						<alias uid="295"/>
+					</from>
+					<to>var_mu_s</to>
+				</connector>
+				<connector uid="297" angle="358.486">
+					<from>
+						<alias uid="298"/>
+					</from>
+					<to>Dk</to>
+				</connector>
+				<connector uid="300" angle="214.992">
+					<from>
+						<alias uid="299"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<connector uid="301" angle="248.961">
+					<from>
+						<alias uid="302"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<connector uid="150" angle="0">
+					<from>
+						<alias uid="151"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<connector uid="303" angle="180">
+					<from>
+						<alias uid="304"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<stacked_container uid="305" x="177.857" y="1479.29" width="350" height="250">
+					<graph width="350" height="250" comparative="true" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="testing_supply"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<stacked_container uid="306" x="745.714" y="2087.14" width="350" height="250">
+					<graph width="350" height="250" comparative="true" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="var_zeta_k"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<connector uid="307" angle="26.7725">
+					<from>
+						<alias uid="308"/>
+					</from>
+					<to>lambda_Pd</to>
+				</connector>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="30" x="502.107" y="507.714" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>par_sigma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="33" x="446.339" y="426.857" width="49.25" height="14">
+					<shape type="name_only"/>
+					<of>par_omega</of>
+				</alias>
+				<alias color="#797979" background="white" font_style="italic" font_color="#797979" uid="36" x="445.089" y="521.714" width="41.25" height="14">
+					<shape type="name_only"/>
+					<of>var_theta</of>
+				</alias>
+				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" label_side="center" uid="67" x="80.7143" y="213.643" width="27.1429" height="25">
+					<of>E</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="69" x="71.6607" y="252.143" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>par_sigma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="71" x="69.6607" y="279.286" width="49.25" height="14">
+					<shape type="name_only"/>
+					<of>par_omega</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="85" x="128.804" y="493.714" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>par_sigma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="86" x="227.964" y="507.714" width="31.25" height="14">
+					<shape type="name_only"/>
+					<of>par_nu</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="84" x="180.946" y="489.571" width="51.25" height="14">
+					<shape type="name_only"/>
+					<of>par_gamma</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="130" x="54.8099" y="832.429" width="34.2857" height="25.7143">
+					<of>Pd</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="133" x="235.393" y="886.71" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>par_zeta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="136" x="0" y="852.881" width="50.25" height="14">
+					<shape type="name_only"/>
+					<of>par_upsilon</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="138" x="248.393" y="921.595" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" background="white" font_style="italic" font_color="#797979" uid="140" x="358.25" y="310.714" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_mu_i</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="144" x="234.393" y="629.429" width="40.25" height="14">
+					<shape type="name_only"/>
+					<of>var_mu_s</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="151" x="985" y="381.714" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="153" x="973.143" y="348.071" width="50.25" height="14">
+					<shape type="name_only"/>
+					<of>par_upsilon</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="164" x="1031.43" y="223.929" width="28.5714" height="26.4286">
+					<of>P</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="167" x="1096.48" y="279.143" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="172" x="985" y="453.286" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="174" x="1114.64" y="450.143" width="37.1429" height="21.4286">
+					<of>Id</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="178" x="985.339" y="479.714" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="181" x="1121.79" y="528.571" width="30.7143" height="26.4286">
+					<of>I</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="183" x="992.143" y="534.786" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="186" x="1045.87" y="564.821" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="192" x="994.39" y="854.143" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="198" x="1076.4" y="894.357" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="196" x="987.25" y="894.357" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="203" x="1112.5" y="600.429" width="31.4286" height="27.1429">
+					<of>A</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="205" x="998.159" y="611.571" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="207" x="1006.59" y="649.429" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="218" x="526.089" y="311.571" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>par_sigma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="220" x="291.018" y="170.143" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="237" x="426.304" y="866.881" width="30.25" height="14">
+					<shape type="name_only"/>
+					<of>scaler</of>
+				</alias>
+				<alias color="#0433FF" font_style="italic" font_color="#0433FF" uid="249" x="283.964" y="771.071" width="18" height="18">
+					<of>S_to_Eq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="251" x="456.035" y="307.286" width="49.25" height="14">
+					<shape type="name_only"/>
+					<of>par_omega</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="260" x="747.946" y="399.429" width="51.25" height="14">
+					<shape type="name_only"/>
+					<of>par_gamma</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="262" x="640.804" y="319.429" width="31.25" height="14">
+					<shape type="name_only"/>
+					<of>par_nu</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="264" x="735.446" y="230.143" width="46.25" height="14">
+					<shape type="name_only"/>
+					<of>par_kappa</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="266" x="1116.07" y="688.929" width="45" height="35">
+					<of>Pq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="268" x="977.819" y="706" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="270" x="982.659" y="735.143" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="272" x="1116.07" y="761.786" width="45" height="35">
+					<of>Aq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="273" x="980.875" y="772.286" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>var_beta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="275" x="982.875" y="803.714" width="34.25" height="14">
+					<shape type="name_only"/>
+					<of>par_eta</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="278" x="1098.02" y="810.857" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="280" x="1114.65" y="843.643" width="45" height="35">
+					<of>Iq</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="286" x="1068.16" y="674.929" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="288" x="1077.45" y="743.714" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="295" x="60.4528" y="726.571" width="12.25" height="14">
+					<shape type="name_only"/>
+					<of>N</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="298" x="191.786" y="845.452" width="33.5714" height="21.4286">
+					<of>Pd</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="299" x="1080.88" y="352.286" width="38.25" height="14">
+					<shape type="name_only"/>
+					<of>par_zeta</of>
+				</alias>
+				<alias color="blue" background="white" font_style="italic" uid="302" x="1063.15" y="313.714" width="45.25" height="14">
+					<shape type="name_only"/>
+					<of>var_zeta_k</of>
+				</alias>
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="304" x="1120" y="375.5" width="34.2857" height="26.4286">
+					<of>Pd</of>
+				</alias>
+				<alias color="#797979" font_style="italic" font_color="#797979" uid="308" x="976.643" y="406.571" width="43.25" height="14">
+					<shape type="name_only"/>
+					<of>par_iota_d</of>
+				</alias>
+			</view>
+		</views>
+	</model>
+</xmile>
+

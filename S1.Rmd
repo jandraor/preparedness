@@ -39,22 +39,21 @@ names(bio_params) <- bio_df$Parameter
 
 This electronic supplementary material aims to document in a reproducible manner
 the simulation results presented in the main text regarding the 
-**no-intervention** and **vaccination** sub-models.
+**no-intervention** sub-models (*SEI3R* and *SEI3RD*).
 
-# Within-host profile (no intervention)
+# Basic reproduction number ($\Re_0$) 
 
-## $\Re_0$ analytical expression
+In this section, we illustrate the procedure to derive an analytical expression 
+for the *SEI3R*'s basic reproduction number via the next-generation matrix 
+method. This method consists of rewriting the rates of infected states in the 
+form of two matrices. One matrix corresponds to the rate of appearance of new 
+infections ($V$ matrix), and the other one to the rate of transitions between 
+compartments of infected individuals ($F$ matrix). The product between $F$ and 
+$V^{-1}$ is known as the next-generation matrix, whose largest eigenvalue 
+(spectral radius) corresponds to $\Re_0$. We obtain the analytical expressions
+using *Mathematica* (see *R0.nb* file in the Github repository).
 
-We derive an analytical expression for the basic reproduction number ($\Re_0$)
-via the next-generation matrix method. This method consists of rewriting the 
-rates of infected states in the form of two matrices. One matrix corresponds to 
-the rate of appearance of new infections ($V$ matrix), and the other one to the 
-rate of transitions between compartments of infected individuals ($F$ matrix). 
-The product between $F$ and $V^{-1}$ is known as the next-generation matrix,
-whose largest eigenvalue (spectral radius) corresponds to $\Re_0$. We obtain 
-the analytical expressions using *Mathematica*.
-
-### $F$ matrix
+## $F$ matrix
 
 ```{r, message = FALSE}
 F_matrix           <- read_csv("./Data/NI_F_matrix.csv", show_col_types = FALSE)
@@ -66,7 +65,7 @@ F_matrix |>
   kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
 ```
 
-### $V$ matrix
+## $V$ matrix
 
 ```{r, message = FALSE}
 F_matrix           <- read_csv("./Data/NI_V_matrix.csv", show_col_types = FALSE)
@@ -78,7 +77,7 @@ F_matrix |>
   kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
 ```
 
-### Spectral radius
+## Spectral radius
 
 \begin{equation}
 
@@ -86,24 +85,10 @@ F_matrix |>
    }\right) + \frac{\eta -\eta  \omega }{\kappa }\right)
 \end{equation}
 
-```{r}
-mdl <- read_xmile("./models/01_SEI3R.stmx", const_list = bio_params)
 
-par_beta_df <- data.frame(par_beta = beta_vals)
+# Simulations
 
-sens_df <- sd_sensitivity_run(mdl$deSolve_components, 
-                              consts_df = par_beta_df,
-                              integ_method = "euler", start_time = 0,
-                              stop_time = 1000, timestep = 1 / 64,
-                              multicore = TRUE, n_cores = 3) |> 
-  mutate(c      = C / N,
-         c_base = c,
-         s      = S / N)
-```
-
-## Simulations
-
-### Attack rate
+## Attack rate
 
 We perform simulations for two variants of the within-host profile. Unlike the
 first variant (*SEI3R*), the second one accounts for disease-induced mortality
@@ -119,10 +104,14 @@ c_df <- data.frame(par_beta = betas)
 ```
 
 ```{r}
-fn <- "./saved_objects/model_01_beta_sens.rds"
+mdl <- read_xmile("./models/1A_SEI3R.stmx", 
+                  const_list = bio_params)
+
+fn <- "./saved_objects/1A_sens.rds"
 
 if(!file.exists(fn)) {
   
+  # Without mortality (SEI3R)
   wo_mort <- sd_sensitivity_run(mdl$deSolve_components, 
                               consts_df    = c_df,
                               integ_method = "rk4", start_time = 0,
@@ -144,16 +133,17 @@ SEI3R_df <- SEI3R_df |>
 ```
 
 ```{r}
-mdl2 <- read_xmile("./models/01b_SEI3RD.stmx",
+mdl2 <- read_xmile("./models/1B_SEI3RD.stmx",
                   const_list = c(bio_params, 
                                  list(par_rho = 0.025)))
 ```
 
 ```{r}
-fn <- "./saved_objects/model_01b_beta_sens.rds"
+fn <- "./saved_objects/1B_sens.rds"
 
 if(!file.exists(fn)) {
   
+  # With mortality (SEI3RD)
   mort_df <- sd_sensitivity_run(mdl2$deSolve_components, 
                               consts_df    = c_df,
                               integ_method = "rk4", start_time = 0,
@@ -170,12 +160,11 @@ if(!file.exists(fn)) {
 
 ```{r}
 SEI3RD_df <- SEI3RD_df |>
-  mutate(c  = C / pop_val,
-         R0 = map_dbl(par_beta, estimate_R0, bio_params),
+  mutate(c     = C / pop_val,
          model = "SEI3RD")
 ```
 
-```{r, fig.cap = "Fig 1. Attack rate comparison", fig.height = 4}
+```{r, fig.height = 4}
 df <- bind_rows(SEI3R_df, SEI3RD_df)
 
 plot_fig_02(df) -> g
@@ -186,266 +175,14 @@ ggsave("./plots/Fig_02_Attack_rate.pdf", plot = g,
 g
 ```
 
-### Final size
+## Final size
 
 To further illustrate that incorporating disease-induced mortality does not 
 substantially impact the dynamics of the within-host profile, we compare the
 attack rates obtained from both variants at day 150.
 
-```{r, fig.cap = "Fig 2. Final size comparison"}
+```{r}
 df2 <- df |> filter(time == 150)
-df_list <- split(df2, df2$model)
 
-ggplot(df2, aes(c)) +
-  geom_histogram(aes(colour = model), fill = "white") +
-  facet_wrap(~model, ncol = 1) +
-  scale_colour_manual(values = c("#2E71AF", "#FFBE82")) +
-  labs(x = parse(text = "'Attack rate at day 150'~(c[150])"),
-       y = "Count") +
-  theme_minimal()
-```
-
-```{r}
-base_df <- sens_df |> select(time, c_base, par_beta, s) |> 
-  mutate(R0 = round(map_dbl(par_beta, estimate_R0, bio_params), 1),
-         Rt = R0 * s) |> 
-  filter(time - trunc(time) == 0)
-```
-
-```{r, warning = FALSE}
-Rt_df <- base_df |> 
-  mutate(diff_rt = abs(1 - Rt)) |> 
-  group_by(R0) |> 
-  filter(diff_rt == min(diff_rt))
-```
-
-
-# Vaccination
-
-```{r}
-vacc_path   <- "./models/02_Vaccines.stmx"
-alpha_v_val <- 12.26
-phi_val     <- 0.65 # Vaccine effectiveness
-Qv0_val     <- 2.45
-```
-
-```{r}
-n_sims <- 1e4
-
-mdl       <- read_xmile(vacc_path, 
-                        const_list = c(bio_params,
-                                       par_alpha_v = 12.26,
-                                       par_rho_v   = 0.15,
-                                       par_phi     = 0.65),
-                        stock_list = list(Qv = 2.45)) 
-ds_inputs <- mdl$deSolve_components 
-```
-
-```{r}
-avl_sens <- sd_sensitivity_run(ds_inputs, 
-                               consts_df = data.frame(par_tau_v = c(60, 30, 15)),
-                               start_time = 0,
-                               stop_time = 150,
-                               timestep = 1 / 64,
-                               integ_method = "euler", multicore = TRUE,
-                               n_cores = 3) |> 
-  select(time, iter, par_tau_v, Vaccine_supply)
-```
-
-## Exploration space
-
-```{r}
-set.seed(300)
-
-sobol_design(lower = c(par_rho_v = 0, 
-                       par_tau_v = 0),
-             upper = c(par_rho_v = 0.3,
-                       par_tau_v = 180),
-             nseq = n_sims) -> consts_df
-```
-
-```{r, fig.cap = "Fig 3. Vaccination's exploration space"}
-plot(consts_df, pch = 16, cex = 0.5, col = "steelblue",
-     xlab = expression(rho^v), ylab = expression(tau^v))
-```
-
-```{r}
-## Simulations
-### By transmissibility level
-
-lapply(beta_vals, \(beta_val, consts_df) {
-  
-  R0_val <- estimate_R0(beta_val, bio_params) |> round(1)
-  
-  fn <- str_glue({"./saved_objects/model_02_R0_{R0_val}.rds"})
-  
-  if(!file.exists(fn)) {
- 
-    tic()
-    
-    consts_df$par_beta <- beta_val
-  
-    sens <- sd_sensitivity_run(ds_inputs, consts_df, start_time = 0, 
-                               stop_time = 300, timestep = 1 / 64,
-                               integ_method = "euler", multicore = TRUE)
-    toc()
-    
-    df <- sens |> select(time, iter, C, par_rho_v, par_tau_v, par_iota) |> 
-      mutate(R0 = R0_val)
-  
-    saveRDS(df, fn) 
-  } else {
-    df <- readRDS(fn)
-  }
-  
-  df
-}, consts_df) -> sens_list
-```
-
-```{r}
-sens_df <- bind_rows(sens_list)
-```
-
-```{r}
-comp_df <- base_df |> 
-  mutate(key = paste(time, R0, sep = "_")) |> 
-  select(key, c_base)
-
-sens_df <- sens_df |> 
-  mutate(key = paste(time, R0, sep = "_")) |> 
-  left_join(comp_df, by = "key") |> 
-    mutate(c = C / pop_val,
-         c_star = round(c / c_base, 3))
-```
-
-```{r}
-R0_sens <- sens_df |> filter(time == 300) |> 
-  select(R0, par_rho_v, par_tau_v, c, c_star, c_base) |> 
-  mutate(R0_lbl = str_glue("\u211c[0]~'= {R0}'"))
-```
-
-
-```{r}
-# By willingness to vaccinate
-iotas <- c(0.2, 0.60, 1)
-```
-
-```{r}
-lapply(iotas, \(iota_val) {
-  
-  mdl <- read_xmile(vacc_path, 
-                  const_list = c(bio_params,
-                                 par_alpha_v = 12.26,
-                                 par_rho_v   = 0.15,
-                                 par_phi     = 0.65,
-                                 par_beta    = beta_vals[[2]]),
-                  stock_list = list(Qv = 2.45,
-                                    S  = pop_val * iota_val - 1,
-                                    Sh = pop_val * (1 -  iota_val))) 
-  
-  ds_inputs <- mdl$deSolve_components 
-  
-  fn <- str_glue("./saved_objects/model_02_iota_{iota_val}.rds")
-  
-  if(!file.exists(fn)) {
-  
-    tic()
-    out_sens <- sd_sensitivity_run(ds_inputs, consts_df,
-                                   start_time   = 0, 
-                                   stop_time    = 300,
-                                   timestep     = 1 / 64,
-                                   integ_method = "euler", 
-                                   multicore = TRUE) |> 
-      mutate(par_iota = iota_val)
-    toc()
-    
-    results_df <- out_sens |> select(time, iter, par_beta, C, par_rho_v, 
-                                     par_tau_v, par_iota)
-  
-    saveRDS(results_df, fn)
- 
- } else results_df <- readRDS(fn)
-  
-  results_df
-}) -> iota_sens
-```
-
-
-```{r}
-sens_df <- bind_rows(iota_sens) |> 
-  mutate(R0 = 3,
-         key = paste(time, R0, sep = "_")) |> 
-  left_join(comp_df, by = "key") |> 
-    mutate(c = C / pop_val,
-         c_star = round(c / c_base, 3)) 
-```
-
-```{r}
-final_df <- sens_df |> filter(time == 300) |> 
-  select(par_iota, par_rho_v, par_tau_v, c, c_star) |> 
-  mutate(iota_lbl = str_glue("iota^v~'= {par_iota}'"))
-```
-
-```{r}
-iota_val <- 1
-
-mdl <- read_xmile(vacc_path, 
-                  const_list = c(bio_params,
-                                 par_alpha_v = 12.26,
-                                 par_rho_v   = 0,
-                                 par_phi     = 0.65,
-                                 par_beta    = beta_vals[[2]],
-                                 par_tau_v   = 15),
-                  stock_list = list(Qv = 12.26,
-                                    S  = pop_val * iota_val - 1,
-                                    Sh = pop_val * (1 -  iota_val))) 
-```
-
-```{r}
-out_df <- sd_simulate(mdl$deSolve_components, start_time = 0, stop_time = 300,
-                      timestep = 1 / 64) |> 
-  mutate(c = C / pop_val)
-```
-
-```{r}
-rates_df <- out_df |> filter(time <= 90) |> 
-  select(time, C_in, S_to_R) |> 
-  rename(`Incidence rate` = C_in,
-         `Vaccination rate` = S_to_R) |> 
-  pivot_longer(-time, names_to = "variable")
-```
-
-```{r}
-vacc_supp <- out_df |> filter(time <= 90) |> 
-  select(time, Vaccine_supply, Vaccine_demand) |> 
-    mutate(ratio = Vaccine_demand / Vaccine_supply)
-```
-
-```{r, dev='cairo_pdf', fig.height = 7, fig.width = 7}
-g <- plot_fig_04(avl_sens, R0_sens, final_df, rates_df, vacc_supp)
-
-ggsave("./plots/Fig_04_Vaccination_analysis.pdf", plot = g, 
-       height = 7.5, width = 7, device = cairo_pdf)
-```
-
-
-
-```{r}
-## Ideal scenario
-mdl <- read_xmile(vacc_path, const_list = c(bio_params,
-                                     par_alpha_v = alpha_v_val,
-                                     par_rho_v   = 0,
-                                     par_phi     = phi_val,
-                                     par_iota    = 1,
-                                     par_beta    = beta_vals[[2]],
-                                     par_tau_v   = 15),
-                        stock_list = list(Qv = alpha_v_val)) 
-```
-
-```{r}
-sd_simulate(mdl$deSolve_components, start_time = 0, 
-            stop_time = 1000, 
-            timestep = 1 / 64, integ_method = "euler") |> 
-  select(time, C) |> mutate(c = C/pop_val) |> filter(time == 300) |> 
-  pull(c) -> ideal_scenario_val
+plot_final_size(df2)
 ```

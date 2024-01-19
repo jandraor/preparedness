@@ -1,5 +1,5 @@
 ---
-title: "S2"
+title: "S2 - NPIs"
 output: 
   html_document:
     toc: true
@@ -12,6 +12,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(dplyr)
+library(gt)
 library(kableExtra)
 library(Metrics)
 library(pomp)
@@ -28,90 +29,94 @@ source("./R_scripts/optim_est.R")
 
 pop_val   <- 17475415
 beta_vals <- 0.724637681 * c(1, 1.5, 2)
+zeta_val  <- beta_vals[[2]] * 10
 
 bio_df <- read_csv("./Data/bio_params.csv", 
                        show_col_types = FALSE)
 
 bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
+
+delta_val <- 0.6
 ```
 
-This electronic supplementary material aims to document in a reproducible manner
-the simulation results presented in the main text regarding the 
-**testing & isolation** and **contact tracing** sub-models.
+This electronic supplementary material aims to document, in a reproducible 
+manner, the simulation results presented in the main text regarding the 
+sub-models representing the non-pharmaceutical interventions  (**NPIs**).  
 
-# Base case
+
+# Testing & Isolation (*T&I*)
+
+## Equations
+
+Compared to the SEI3R model (*1A_SEI3R.stmx*), T&I models 
+(*2A_TI_fixed_fractions.stmx* & *2B_TI_Logistic.stmx*) modify the dynamics
+of transmission in the following way:
+
+\begin{equation} \label{eq:1}
+  \begin{aligned}
+    \dot{P^d_t}   &= \theta_t \omega \sigma E_t - \nu P^d_t\\
+    \dot{P_t}     &= (1- \theta_t) \omega \sigma E_t - \nu P_t\\
+    \dot{I^d_t}   &= \nu P^d_t - \gamma I^d_t\\
+    \dot{R_t}   &= \gamma (I_t + I^d_t) + \kappa A_t \\
+    \lambda_t   &= \frac{\beta (P_t +  I_t + P^d_t + (1 -\iota^d) I^d_t + \eta A_t)}{N}
+    \end{aligned}
+\end{equation}
+
+## Comparison
+
+### Fixed testing fraction
+
+First, we simulate the *T&I* with a constant testing fraction
+($\theta^d$) under three scenarios, where $\theta$ takes the following
+values: *0%*, *25%*, *50%*. 
 
 ```{r}
-mdl <- read_xmile("./models/01_SEI3R.stmx", const_list = bio_params)
+# Model with a constant intervention
+c_mdl <- read_xmile("./models/2A_TI_fixed_fractions.stmx", 
+                    const_list = c(bio_params))
 
-par_beta_df <- data.frame(par_beta = beta_vals)
+theta_df <- data.frame(par_theta_d = c(0, 0.25, 0.5))
 
-sens_df <- sd_sensitivity_run(mdl$deSolve_components, 
-                              consts_df = par_beta_df,
+f_t_sens_df <- sd_sensitivity_run(c_mdl$deSolve_components, 
+                              consts_df = theta_df,
                               integ_method = "euler", start_time = 0,
                               stop_time = 1000, timestep = 1 / 64,
                               multicore = TRUE, n_cores = 3,
                               reporting_interval = 1 / 8) |> 
-  mutate(c      = C / N,
-         c_base = c,
-         s      = S / N)
+  mutate(c = C / N)
 ```
+
 
 ```{r}
-base_df <- sens_df |> select(time, c_base, par_beta, s, C_in) |> 
-  mutate(R0 = round(estimate_R0(par_beta, bio_params), 1),
-         Rt = R0 * s)
-
-ref_time <- base_df |> filter(R0 == 3) |> 
-  mutate(diff_rt = 1 - Rt) |> 
-  filter(diff_rt > 0) |> 
-  filter(diff_rt == min(diff_rt)) |> 
-  pull(time)
-
-ref_peak <- base_df |> filter(R0 == 3) |> 
-  filter(C_in == max(C_in)) |> pull(C_in)
+# Fixed testing
+f_t_df <- f_t_sens_df |> 
+  filter(time > 0 & time <= 150) |> 
+  select(time, c, E_to_Pd, par_theta_d) |> 
+  mutate(E_to_Pd = 1000 * E_to_Pd / pop_val,
+         c = c * 100,
+         var_theta = par_theta_d * 100) |> 
+  pivot_longer(c(-time, -par_theta_d)) |> 
+  mutate(par_theta_d = percent(par_theta_d),
+         name = case_when(name == "c" ~ "Attack rate [%]",
+                          name == "E_to_Pd" ~ "Daily tests per 1000 population",
+                          name == "var_theta" ~"Testing fraction [%]")) 
 ```
 
-# Testing & Isolation
+### Time-varying testing fraction
 
-## $\Re_0$ analytical expression
+We model the time-varying testing fraction using the logistic growth model. To 
+configure this structure, we employ data^[https://archief51.sitearchief.nl/archives/sitearchief/20230629020000/https://www.diensttesten.nl/over-dienst-testen/historie-van-dienst-testen] from the COVID-19 pandemic in the Netherlands (see below) and 
+model calibration to estimate the logistic growth model's parameters. 
 
-### $F$ matrix
+- In March 2020 the reported test capacity in the Netherlands was 4000 tests per 
+day. 
 
-```{r, message = FALSE}
-F_matrix           <- read_csv("./Data/TI_F_matrix.csv", show_col_types = FALSE)
-c_names            <- colnames(F_matrix)
-c_names[1]         <- ""
-colnames(F_matrix) <- c_names
+- In June 2020 the Netherlands was able to conduct 30.000 tests per day.
 
-F_matrix |>
-  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
-```
+- By the end of 2020 the capacity has grown to 120.000 tests per day.
 
-### $V$ matrix
-
-```{r, message = FALSE}
-F_matrix           <- read_csv("./Data/TI_V_matrix.csv", show_col_types = FALSE)
-c_names            <- colnames(F_matrix)
-c_names[1]         <- ""
-colnames(F_matrix) <- c_names
-
-F_matrix |>
-  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
-```
-
-### Spectral radius
-
-\begin{equation}
-
-  \Re_0 = \frac{\beta  (\gamma  \eta  (\nu -\nu 
-   \omega )+\gamma  \kappa  \omega
-   +\kappa  \nu  \omega  (1-\theta  \iota^d
-   ))}{\gamma  \kappa  \nu }
-\end{equation}
-
-## Partial calibration
+- In April 2021 the capacity had grown to 175.000 test per day.
 
 ```{r}
 data_df <- data.frame(time  = c(0, 90, 300, 390),
@@ -127,23 +132,22 @@ tc_pars <- data.frame(name  = c("alpha_d", "rho_d", "Qd"),
   write_csv("./Data/Testing_capacity_pars.csv")
 ```
 
-
-```{r, fig.cap = "Fig 1. Testing capacity's calibration"}
-ggplot(est_obj$sim, aes(time, Q)) +
-  geom_line() +
-  geom_point(data = data_df, aes(y = value), colour = "red") +
-  theme_classic()
+```{r}
+plot_fit(est_obj$sim, data_df)
 ```
 
+Using the capacity estimates, we simulate the *testing and isolation* model.
 
 ```{r}
-fp <- "./models/03_Testing_Isolation.stmx"
+fp <- "./models/2B_TI_Logistic.stmx"
 
 iota_mid <- 0.51
 
 alpha_d_val <- data_df[4, 2]
+Qd_init     <- data_df[1, 2]
 
-mdl       <- read_xmile(fp, stock_list = list(Qd = data_df[1, 2]),
+mdl       <- read_xmile(fp, 
+                        stock_list = list(Qd = Qd_init),
                         const_list = c(bio_params,
                                        par_beta    = beta_vals[[2]],
                                        par_alpha_d = alpha_d_val,
@@ -151,239 +155,149 @@ mdl       <- read_xmile(fp, stock_list = list(Qd = data_df[1, 2]),
                                        par_iota_d  = 0.51,
                                        par_delta   = 0.60))
 ds_inputs <- mdl$deSolve_components
-```
 
-```{r}
 output <- sd_simulate(ds_inputs, start_time = 0, stop_time = 1000, 
                       timestep = 1 / 64,
                       integ_method = "euler") |> 
-  mutate(c     = C / pop_val,
-         R_aux = estimate_R0_ti(var_theta, beta_vals[[2]], iota_mid, bio_params),
-         Rt = (S / pop_val) * R_aux)
+  mutate(c     = C / pop_val)
 ```
 
 ```{r}
-no_df <- base_df |> filter(R0 == 3) |> 
-  rename(c = c_base) |> 
-  select(time, c, Rt) |> 
-  mutate(var_theta = 0,
-         model = "no intervention")
+# This data frame summarises key indicators from the previous simulation
+tv_df <- output |> select(time, c, E_to_Pd, Qd, var_theta) |> 
+  mutate(E_to_Pd = 1000 * E_to_Pd / pop_val,
+         c = c * 100,
+         var_theta = var_theta * 100) |> 
+  filter(time > 0 & time <= 150) |> 
+  pivot_longer(-time) |> 
+  mutate(name = case_when(name == "c" ~ "Attack rate [%]",
+                          name == "E_to_Pd" ~ "Daily tests per 1000 population",
+                          name == "Qd" ~ "Testing capacity per 1000 population",
+                          name == "var_theta" ~"Testing fraction [%]")) 
 ```
 
-
-```{r, fig.height = 3.5, fig.width = 3, warning = FALSE}
-ti_df <- output |> select(time, c, var_theta, Rt) |> 
-  mutate(model = "T&I")
-
-ti_ref2 <- output |> select(time, C_in) |> 
-  mutate(model = "T&I",
-         `Contact tracing rate` = 0)
-
-
-df <- bind_rows(no_df, ti_df) |> 
-  rename(`theta[t]`  = var_theta,
-         "\u211c[t]" = Rt) |> 
-  pivot_longer(c(-time, - model))
-```
-
-## Exploration space
+This table compares the attack rate at day 150 between the two assumptions
+(fixed and time-varying testing rates).
 
 ```{r}
-set.seed(600)
+tv_attack_rate <- output |> filter(time == 150) |>
+  mutate(par_theta_d = "Time-varying",
+         c         = percent(round(c, 2))) |>
+  select(par_theta_d, C, c)
 
-sobol_design(lower = c(par_rho_d = 0,
-                       par_alpha_d = alpha_d_val),
-             upper = c(par_rho_d   = rho_est * 10,
-                       par_alpha_d = alpha_d_val * 10),
-             nseq = 5000) -> pars_df
-
-pars_df <- pars_df |> bind_rows(data.frame(par_rho_d   = rho_est,
-                                           par_alpha_d = alpha_d_val))
-
-consts_df <- pars_df
+f_t_sens_df |> filter(time == 150) |> select(par_theta_d, C, c) |>
+  mutate(par_theta_d = percent(par_theta_d),
+         c         = percent(round(c, 2))) |>
+  bind_rows(tv_attack_rate) |>
+  gt() |>
+    cols_label(
+    par_theta_d = html("Testing fraction (&theta;<sup>d</sup>)"),
+    c = html("Attack rate by day 150 (c<sub>150</sub>)"),
+    C = html("Cumulative infections by day 150 (C<sub>150</sub>)")) |>
+    tab_style(
+      style = list(
+      cell_text(color = "#0363BB")),
+    locations = cells_body(
+      rows = 4))
 ```
 
-```{r, fig.cap = "Fig 2. Testing capacity's exploration space"}
-plot(pars_df, pch = 16, cex = 0.5, col = "steelblue",
-     xlab = expression(rho^d), ylab = expression(alpha^d))
-```
+# Testing, tracing and Isolation (*TTI*)
 
-```{r}
-delta_vals <- c(0.3, 0.6, 0.9)
-str_time   <- 0
-stp_time   <- 300
-```
+TTI refers to the combined strategy of testing and isolation plus contact 
+tracing.
 
-```{r}
-iota_vals  <- c(0.43, 0.51, 0.62) 
+## Equations
 
-comb_df           <- expand_grid(delta_vals, iota_vals)
-colnames(comb_df) <- c("dv", "iv")
-
-map_df(transpose(comb_df), \(comb_obj) {
-  
-  dv <- comb_obj$dv
-  iv <- comb_obj$iv
-  
-  consts_df$par_delta  <- dv
-  consts_df$par_iota_d <- iv
-
-  fn <- str_glue("./saved_objects/model_03_delta_{dv}_iota_{iv}.rds")
-  
-  if(!file.exists(fn)) {
-    
-    tic()
-    sens <- sd_sensitivity_run(ds_inputs, consts_df, 
-                               start_time = str_time, 
-                               stop_time = stp_time, 
-                               timestep = 1 / 64,
-                               integ_method = "euler", multicore = TRUE,
-                               reporting_interval = 1/8) 
-   
-    
-    df <- sens |> 
-      select(time, S, iter, par_beta, C, par_alpha_d, par_rho_d,
-                         par_delta, var_theta, par_iota_d)
-    
-    R_aux <- estimate_R0_ti(df$var_theta, beta_vals[[2]], df$par_iota_d, 
-                            bio_params)
-    
-    df <- df |>
-      mutate(c  = C / pop_val,
-             Rt = (S / pop_val) * R_aux)
-    
-    output <- df |> 
-      mutate(diff_rt = 1 - Rt) |> 
-      filter(diff_rt > 0) |> 
-      group_by(iter, par_delta, par_iota_d) |> 
-      filter(diff_rt == min(diff_rt)) |> ungroup() |> 
-      select(par_delta, iter, time, par_rho_d, par_alpha_d, par_iota_d) |> 
-      mutate(time_star = time - ref_time)
-    
-    saveRDS(output, fn)
-    
-    toc()
-  
-  } else output <- readRDS(fn)
-  
-  output
-}) -> time_thres_df
-```
-
-```{r}
-fp <- "./models/03b_Testing_Isolation.stmx"
-
-mdlb       <- read_xmile(fp, stock_list = list(Qd = data_df[1, 2]),
-                        const_list = c(bio_params,
-                                       par_beta   = beta_vals[[2]],
-                                       par_iota_d  = iota_mid))
-```
-
-```{r}
-map_df(delta_vals, \(delta_val) {
-  
-  consts_df$par_delta  <- delta_val
-  
-  fn <- str_glue("./saved_objects/model_03b_delta_{delta_val}.rds")
-  
-  if(!file.exists(fn)) {
-  
-    tic()
-
-    sens <- sd_sensitivity_run(mdlb$deSolve_components, consts_df, 
-                               start_time = str_time, 
-                               stop_time = stp_time, 
-                               timestep = 1 / 64,
-                               integ_method = "euler", multicore = TRUE,
-                               reporting_interval = 1/8) 
-    
-    
-    df <- sens |> 
-      select(time, S, iter, par_beta, C, par_alpha_d, par_rho_d,
-                         par_delta, var_theta, par_iota_d)
-    
-    R_aux <- estimate_R0_ti(df$var_theta, beta_vals[[2]], df$par_iota_d, 
-                            bio_params)
-    
-    df <- df |>
-      mutate(c  = C / pop_val,
-             Rt = (S / pop_val) * R_aux)
-    
-    output <- df |> 
-      mutate(diff_rt = 1 - Rt) |> 
-      filter(diff_rt > 0) |> 
-      group_by(iter, par_delta, par_iota_d) |> 
-      filter(diff_rt == min(diff_rt)) |> ungroup() |> 
-      select(par_delta, iter, time, par_rho_d, par_alpha_d, par_iota_d) |> 
-      mutate(time_star = time - ref_time)
-    
-    saveRDS(output, fn)
-    toc()
-  
-  } else output <- readRDS(fn)
-  
-  output
-}) -> time_thres_df2
-```
+Compared to the T&I models (*2A_TI_fixed_fractions.stmx* & 
+*2B_TI_Logistic.stmx*), the TTI structure (*2C_TTI_Logistic.stmx* & 
+*2D_TTI_fixed_fractions.stmx*) modify the dynamics of transmission in the following way:
 
 
-
-```{r, warning = FALSE, fig.height = 7, fig.width = 7}
-g <- plot_fig_06(df, time_thres_df, time_thres_df2)
-
-ggsave("./plots/Fig_06_Testing_analysis.pdf", plot = g, 
-       height = 7, width = 7, device = cairo_pdf)
-```
-
-# Contact tracing
-
-## $\Re_0$ analytical expression
-
-### F matrix
-
-```{r, message = FALSE}
-F_matrix           <- read_csv("./Data/CT_F_matrix.csv", show_col_types = FALSE)
-c_names            <- colnames(F_matrix)
-c_names[1]         <- ""
-colnames(F_matrix) <- c_names
-
-F_matrix |>
-  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
-```
-
-### V matrix
-
-```{r, message = FALSE}
-F_matrix           <- read_csv("./Data/CT_V_matrix.csv", show_col_types = FALSE)
-c_names            <- colnames(F_matrix)
-c_names[1]         <- ""
-colnames(F_matrix) <- c_names
-
-F_matrix |>
-  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
-```
-
-### Spectral radius (largest eigenvalue)
-
-\begin{equation}
-
-a = \sqrt{\gamma ^4 \kappa ^2 \upsilon ^2 \left((\gamma  (\zeta  \eta  \nu  (\omega -1)-\zeta  \kappa  \omega + \zeta^k \theta  \kappa  \omega )+\zeta  \kappa  \nu  \omega  (\theta  \iota^d -1))^2-4 \gamma  \zeta  \zeta^k \theta  (\iota^d -1) \kappa  \omega  (\gamma  \eta  (\nu -\nu  \omega )+\gamma  \kappa  \omega +\kappa  \nu  \omega )\right)}
-
+\begin{equation} \label{eq:2}
+  \begin{aligned}
+    \dot{S_t}       &= -\lambda_t S_t + \frac{S^q_t}{\sigma^-{1} + \nu^{-1} +
+      \gamma^{-1}} - \mu^s_t S_t - \mu^i_t S_t \\
+    \dot{S^q_t}     &= \mu^s_t S_t - \frac{S^q_t}{\sigma^-{1} + \nu^{-1} +\gamma^{-1}}\\
+    \dot{E^q_t}     &= \mu^i_t S_t - \sigma E^q_t\\
+    \dot{P^q_t}     &= \omega \sigma E^q_t - \nu P^q_t\\
+    \dot{I^q_t}     &= \nu P^q_t - \gamma I^q_t\\
+    \dot{A^q_t}     &= (1 - \omega) \sigma E^q_t - \kappa A^q_t\\
+    \dot{R_t}       &= \gamma (I_t + I^d_t + I^q_t) + \kappa (A_t + A^q_t) \\
+    \lambda_t       &= \lambda^{P}_t + \lambda^{P^d}_t + \lambda^{P^q}_t +
+      \lambda^{I}_t + \lambda^{I^d}_t + \lambda^{I^q}_t + \lambda^{A}_t +
+      \lambda^{A^q}_t\\
+    \lambda^{P^q}_t &= (1 - \iota^d) \frac{\beta P^q_t} {N}\\
+    \lambda^{I^q}_t &= (1 - \iota^d) \frac{\beta I^q_t} {N} \\
+    \lambda^{A^q}_t &= (1 - \iota^d) \frac{\eta \beta A^q_t}{N} \\
+    \lambda^{P^d}_t &= \frac{\upsilon (\zeta - \zeta^k_t) P^d_t}{N} \\
+    D^k_t           &= \zeta P^d_t\\
+    k_t             &= \min(D^k_t , Q^k_t) \\
+    \zeta^k_t       &= \begin{cases}
+    0,   P^d = 0 \\
+    \frac{k_t}{P^d}, P^d > 0
+    \end{cases}\\
+    \mu^s_t         &= \frac{(1 - \upsilon) \zeta^k_t P_t^d}{N}\\
+    \mu^i_t         &=  \frac{\upsilon \zeta^k_t P_t^d}{N}
+  \end{aligned}
 \end{equation}
 
-\begin{equation}
+## Comparison
 
-b = \gamma ^3 \kappa  \upsilon  (\zeta  \eta  (\nu -\nu  \omega )+\zeta  \kappa  \omega - \zeta^k \theta  \kappa  \omega )+\gamma ^2 \zeta  \kappa ^2 \nu  \upsilon  \omega  (1-\theta  \iota^d )
+### Fixed testing & tracing fractions
 
-\end{equation}
+We simulate the *TTI* model with constant testing ($\theta^d$) and tracing
+($\theta^k$) fractions underthree scenarios. These fractions can take the
+following values: *0%*, *25%*, *50%*.
 
-\begin{equation}
+```{r}
+# Testing, tracing, and isolation with fixed testing and tracing fractions
+f_ct_path <- "./models/2D_TTI_fixed_fractions.stmx"
 
-\Re_0 = \frac{a + b}{2 \gamma ^3 \kappa ^2 \nu}
+f_ct_mdl <- read_xmile(f_ct_path, 
+                       const_list = c(bio_params,
+                                      par_zeta = zeta_val))
 
-\end{equation}
+theta_df <- data.frame(par_theta_d = c(0, 0.25, 0.5),
+                       par_theta_k = c(0, 0.25, 0.5))
 
-## Partial calibration
+c_sens_df <- sd_sensitivity_run(f_ct_mdl$deSolve_components, 
+                              consts_df = theta_df,
+                              integ_method = "euler", start_time = 0,
+                              stop_time = 1000, timestep = 1 / 64,
+                              multicore = TRUE, n_cores = 3,
+                              reporting_interval = 1 / 8) |> 
+  mutate(c = C / N)
+```
+
+
+```{r}
+# Fixed testing & tracing
+f_ct_df <- c_sens_df |> 
+  filter(time > 0 & time <= 150) |> 
+  select(time, c, k, par_theta_k) |> 
+  mutate(c = c * 100,
+         tracing_rate     = 1000 * k / pop_val,
+         var_theta_k = par_theta_k * 100) |> 
+  select(-k) |> 
+  pivot_longer(c(-time, -par_theta_k)) |> 
+  mutate(par_theta_k = percent(par_theta_k),
+         name = case_when(name == "c" ~ "Attack rate [%]",
+                          name == "tracing_rate" ~ "Daily tracings per 1000 population",
+                          name == "var_theta_k" ~"Tracing fraction [%]")) 
+```
+
+### Time-varying testing fraction
+
+We model the time-varying tracing fraction using the logistic growth model. To 
+configure this structure, we employ data^[https://ggdghor.nl/actueel-bericht/werving-bron-en-contactonderzoek/] 
+from the COVID-19 pandemic in the Netherlands (see below) and 
+model calibration to estimate the logistic growth model's parameters. 
+
+At the start of the pandemic tracing capacity was around 200-220 FTE. By May 
+2020, this value tripled to 670 FTE. From June 2020, the capacity of the GGD 
+was significantly expanded to a total of 1250 FTE. By the end of September 2020,
+this capacity was expected to reach 3250 FTE. 
+
 
 ```{r}
 data_FTE <- data.frame(time  = c(0, 60, 90, 210),
@@ -394,19 +308,18 @@ rho_k_est   <- est_obj$estimate
 ```
 
 
-```{r, fig.cap = "Fig 3. Contact-tracing capacity's calibration"}
-ggplot(est_obj$sim, aes(time, Q)) +
-  geom_line() +
-  geom_point(data = data_FTE, aes(y = value), colour = "red") +
-  theme_classic()
+```{r}
+plot_fit(est_obj$sim, data_FTE)
 ```
 
+Using the capacity estimates, we simulate the *TTI* model.
+
 ```{r}
-fp_ct <- "./models/04_Contact_tracing.stmx"
+fp_ct <- "./models/2C_TTI_Logistic.stmx"
 
 zeta_val   <- beta_vals[[2]] * 10
 
-# Number of index cases traced per week
+# Number of index cases traced per week per FTE
 idx_val <- 3
 
 Qk_init     <- (data_FTE[1, 2] * idx_val * zeta_val / 7) * (1000 / pop_val)
@@ -431,164 +344,360 @@ mdl       <- read_xmile(fp_ct, stock_list = list(Qd = data_df[1, 2],
                                        par_iota_d  = 0.51,
                                        par_delta   = 0.60))
 ds_inputs <- mdl$deSolve_components
+
+sim_output <- sd_simulate(ds_inputs, start_time = 0, stop_time = 300, 
+                          timestep = 1 / 64, integ_method = "euler") |> 
+  mutate(c = C / N)
 ```
 
 ```{r}
-sim_output <- sd_simulate(ds_inputs, start_time = 0, stop_time = 300, timestep = 1/32,
-            integ_method = "euler")
+# Time-varying (tv) contact tracing (ct)
+tv_ct_df <- sim_output  |> select(time, c, k, Qk, Dk) |> 
+  mutate(c                = c * 100,
+         tracing_rate     = 1000 * k / pop_val,
+         tracing_fraction = k/Dk * 100) |> 
+  filter(time > 0 & time <= 150) |> 
+  select(-k, -Dk) |> 
+  pivot_longer(-time) |> 
+  mutate(name = case_when(name == "c" ~ "Attack rate [%]",
+                          name == "tracing_rate" ~ "Daily tracings per 1000 population",
+                          name == "Qk" ~ "Tracing capacity per 1000 population",
+                          name == "tracing_fraction" ~"Tracing fraction [%]")) 
+```
+
+This table compares the attack rate at day 150 between the two assumptions
+(fixed and time-varying testing rates).
+
+```{r}
+ct_tv_df <- sim_output |> filter(time == 150) |>
+  mutate(par_theta_k = "Time-varying",
+         c         = percent(round(c, 2))) |>
+  select(par_theta_k, c, C)
+
+c_sens_df |> filter(time == 150) |> select(par_theta_k, c, C) |>
+  mutate(par_theta_k = percent(par_theta_k),
+         c         = percent(round(c, 2))) |>
+  bind_rows(ct_tv_df) |>
+  gt() |>
+    cols_label(
+    par_theta_k = html("Testing & tracing fraction (&theta;)"),
+    c = html("Attack rate at day 150 (c<sub>150</sub>)"),
+    C = html("Cumulative infections by day 150 (C<sub>150</sub>)")) |>
+    tab_style(
+      style = list(
+      cell_text(color = "#0363BB")),
+    locations = cells_body(
+      rows = 4))
+```
+
+```{r, fig.height = 7}
+g <- plot_fig_04(tv_df, f_t_df, tv_ct_df, f_ct_df)
+
+ggsave("./plots/Fig_04_TI_CT.pdf", plot = g, 
+       height = 7, width = 7, device = cairo_pdf)
+
+g
+```
+
+## Testing and tracing scenarios
+
+```{r}
+ref_testing <- tc_pars |> pivot_wider() |> 
+  rename(par_alpha_d = alpha_d,
+         par_rho_d = rho_d)
+
+test_sc_1 <- ref_testing |> mutate(par_rho_d = par_rho_d * 2,
+                                   Testing_scenario = "t1")
+
+test_sc_2 <- ref_testing |> mutate(par_rho_d = 0,
+                                   Qd = par_alpha_d,
+                                   Testing_scenario = "t2")
+
+test_sc_3 <- ref_testing |> mutate(par_rho_d = 0,
+                                   par_alpha_d = par_alpha_d * 2,
+                                   Qd = par_alpha_d,
+                                   Testing_scenario = "t3")
+
+test_sc <- bind_rows(test_sc_1, test_sc_2, test_sc_3)
+```
+
+```{r}
+ref_tracing <- ct_pars |> pivot_wider() |> 
+  rename(par_alpha_k = alpha_k,
+         par_rho_k = rho_k)
+
+trac_sc_1 <- ref_tracing  |> mutate(par_rho_k = par_rho_k * 2,
+                                   Tracing_scenario = "c1")
+
+trac_sc_2 <- ref_tracing  |> mutate(par_rho_k = 0,
+                                    Qk = par_alpha_k,
+                                    Tracing_scenario = "c2")
+
+trac_sc_3 <- ref_tracing  |> mutate(par_rho_k   = 0,
+                                    par_alpha_k = par_alpha_k * 2,
+                                    Qk          = par_alpha_k,
+                                   Tracing_scenario = "c3")
+
+trac_sc <- bind_rows(trac_sc_1, trac_sc_2, trac_sc_3)
+```
+
+```{r}
+scenarios_df <- expand.grid(Testing_scenario = paste0("t", 1:3), 
+            Tracing_scenario = paste0("c", 1:3)) |> 
+  left_join(test_sc) |> 
+  left_join(trac_sc) |> 
+  mutate(iter = row_number())
+```
+
+```{r}
+scenarios_df |>
+  select(-iter) |> 
+  mutate(across(where(is.numeric),~round(.x, 2))) |> 
+  gt() |>
+    cols_label(
+    par_alpha_d      = html("&alpha;<sup>d</sup>"),
+    par_rho_d        = html("&rho;<sup>d</sup>"),
+    Qd               = html("Q<sub>0</sub><sup>d</sup>"),
+    par_alpha_k      = html("&alpha;<sup>k</sup>"),
+    par_rho_k        = html("&rho;<sup>k</sup>"),
+    Qk               = html("Q<sub>0</sub><sup>k</sup>"),
+    Testing_scenario = "Testing scenario",
+    Tracing_scenario = "Tracing scenario")
+```
+
+```{r}
+fp_ct <- "./models/2C_TTI_Logistic.stmx"
+
+zeta_val  <- beta_vals[[2]] * 10
+iota_mid  <- 0.51
+delta_mid <- 0.6
+
+mdl <- read_xmile(fp_ct,
+                  const_list = c(bio_params,
+                                 par_iota_d  = iota_mid,
+                                 par_delta   = delta_mid))
+
+sim_sce_df <- sd_sensitivity_run(mdl$deSolve_components, 
+                             consts_df = scenarios_df[,
+                                                      c("par_alpha_d", "par_rho_d", 
+                                                        "par_alpha_k", "par_rho_k")],
+                             stocks_df = scenarios_df[, c("Qd", "Qk")],
+                             integ_method = "euler", start_time = 0,
+                             stop_time = 1000, timestep = 1 / 64,
+                             multicore = TRUE, n_cores = 3,
+                             reporting_interval = 1 / 8)
+```
+
+```{r}
+sim_sce_df |> filter(time == 150) |> 
+  mutate(c = percent(round(C / pop_val, 2))) |> 
+  left_join(scenarios_df[, c("iter", "Testing_scenario", "Tracing_scenario")]) |> 
+  select(Testing_scenario, Tracing_scenario, c) |>
+  arrange(Testing_scenario) |> 
+  gt() |> 
+    cols_label(
+    Testing_scenario = "Testing scenario",
+    Tracing_scenario = "Tracing scenario",
+    c = html("Attack rate at day 150 (c<sub>150</sub>)"))
+```
+
+```{r}
+cap_df <- sim_sce_df |> select(time, Qd, Qk, iter) |> 
+  filter(time <= 120,
+         iter %in% c(1, 5, 9)) |> 
+  left_join(scenarios_df[, c("iter", "Testing_scenario", "Tracing_scenario")])
 ```
 
 
 ```{r}
-ct_df <- sim_output |> select(time, C_in, k, Dk) |> 
-  mutate(`Contact tracing rate` = k/Dk,
-         model = "CT") |> 
-  select(-k, -Dk)
-  
-
-comparison_ti_ct <- bind_rows(ct_df, ti_ref2) |> 
-  filter(time >= 1) |> 
-  mutate(C_in = C_in / pop_val) |> 
-  rename(`Incidence rate` = C_in) |> 
-  pivot_longer(c(-time, -model))
+inc_df <- sim_sce_df |> select(iter, time, C_in) |> 
+  filter(time <= 120) |> 
+  left_join(scenarios_df[, c("iter", "Testing_scenario", "Tracing_scenario")])
 ```
 
-## Exploration space
+```{r}
+g <- plot_fig_06(cap_df, inc_df, sim_output)
+
+ggsave("./plots/Fig_06_TI_CT_Scenarios.pdf", plot = g, 
+       height = 7, width = 7, device = cairo_pdf)
+
+g
+```
+
+## Compliance scenarios
+
+We simulate the TTI model under three scenarios of individual compliance.
+
+```{r}
+iota_high  <- 0.62
+delta_high <- 0.9
+comp_scn <- data.frame(par_iota_d = c(iota_mid, iota_high, iota_high),
+                       par_delta  = c(delta_high, delta_val, delta_high)) 
+
+fp_ct <- "./models/2C_TTI_Logistic.stmx"
+
+mdl <- read_xmile(fp_ct,
+                  list(Qd = data_df[1, 2],
+                       Qk = Qk_init),
+                  const_list = c(bio_params,
+                                 par_zeta = zeta_val,
+                                 par_alpha_d = alpha_d_val,
+                                 par_alpha_k = alpha_k_val,
+                                 par_rho_d   = rho_est,
+                                 par_rho_k   = rho_k_est))
+
+comp_sce_df <- sd_sensitivity_run(mdl$deSolve_components, 
+                                  consts_df = comp_scn,
+                                  integ_method = "euler", start_time = 0,
+                                  stop_time = 1000, timestep = 1 / 64,
+                                  reporting_interval = 1 / 8)
+```
+
+## Detecting pre-clinical individuals
+
+We simulate a variant of TTI model, where the detection of infectious 
+individuals occurs at the pre-clinical (pre-symptomatic) stage.
+
+```{r}
+comp_scn2 <- bind_rows(data.frame(par_iota_d = iota_mid,
+                                  par_delta  = delta_val), comp_scn) 
+
+mdl_4d_fp <- "./models/2E_TTI_logistic_pre_symp.stmx"
+
+mdl_4d <- read_xmile(mdl_4d_fp,
+                     list(Qd = data_df[1, 2],
+                          Qk = Qk_init),
+                     const_list = c(bio_params,
+                     par_zeta = zeta_val,
+                     par_alpha_d = alpha_d_val,
+                     par_alpha_k = alpha_k_val,
+                     par_rho_d   = rho_est,
+                     par_rho_k   = rho_k_est))
+
+mdl_4d_sce_df <- sd_sensitivity_run(mdl_4d$deSolve_components, 
+                                    consts_df = comp_scn2,
+                                    integ_method = "euler", start_time = 0,
+                                    stop_time = 500, timestep = 1 / 64,
+                                    reporting_interval = 1 / 8)
+```
+
+```{r, fig.height = 7}
+g <- plot_fig_07(comp_sce_df, mdl_4d_sce_df, sim_output, comp_scn, inc_df)
+
+ggsave("./plots/Fig_07_CT_sensitivity.pdf", plot = g, 
+       height = 6, width = 7, device = cairo_pdf)
+
+g
+```
+
+
+# TTI + mobility restrictions (MR)
+
+```{r}
+mdl_ct_mob_fp <- "./models/2F_TTI_PLUS_MR.stmx"
+
+mdl_ct_mob <- read_xmile(mdl_ct_mob_fp,
+                         const_list  = c(bio_params,
+                                         par_zeta_0  = zeta_val,
+                                         par_alpha_d = alpha_d_val,
+                                         par_alpha_k = alpha_k_val,
+                                         par_rho_d   = rho_est,
+                                         par_rho_k   = rho_k_est,
+                                         par_iota_d  = iota_mid,
+                                         par_delta   = delta_mid),
+                         stock_list = c(Qd = Qd_init,
+                                        Qk = Qk_init,
+                                        Qm = 90))
+```
+
+This code simulates the model that incorporates testing, tracing, and isolation
+(TTI) and mobility restrictions (MR). In other words, the three 
+non-pharmaceutical interventions explored in this work. This simulation explores
+three scenarios: 
+
+1. Mobility restrictions without TTI
+2. TTI + mobility restrictions, where the latter are deployed at day 0
+2. TTI + mobility restrictions, where the latter are deployed at day 40
+
+```{r}
+# First scenario: Just MR
+# Second scenario: TTI + MR, starting at 0
+# Third scenario: TTI + MR, starting at 40
+intv_df <- data.frame(par_tau_m = c(0, 0, 40),
+                      Qd = c(0, Qd_init, Qd_init),
+                      Qm = c(90, 90, 90),
+                      itv = c("MR", "TTI + MR", "TTI + MR"),
+                      iter = 1:3)
+
+sim_mob_df <- sd_sensitivity_run(mdl_ct_mob$deSolve_components,
+                                 consts_df = select(intv_df, par_tau_m),
+                                 stocks_df = select(intv_df, Qd, Qm),
+                                 start_time = 0,
+                                 stop_time = 360, 
+                                 timestep = 1 / 64, integ_method = "euler",
+                               multicore = TRUE, n_cores = 3) |> 
+  mutate(c = C / N) |> 
+  left_join(intv_df[, c("iter", "itv")])
+```
+
+## Sensitivity analysis
+
+This code performs a sensitivity analysis on the *TTI + MR* model. In 
+particular, we draw 10 000 points  from a two-dimensional uniform space defined
+by the compliance parameter ($\xi$) and the time at which mobility restrictions
+are introduced ($\tau^m$). We subsequently use these points to configure and
+simulate the *TTI + MR* model. For each simulation, we estimate the
+attack rate at days 180 & 270.
 
 ```{r}
 set.seed(19860618)
 
-sobol_design(lower = c(par_rho_k = 0,
-                       par_alpha_k = alpha_k_val),
-             upper = c(par_rho_k   = rho_k_est * 10,
-                       par_alpha_k = alpha_k_val * 10),
-             nseq = 5000) -> pars_df
-
-pars_df <- pars_df |> bind_rows(data.frame(par_rho_k   = rho_k_est,
-                                           par_alpha_k = alpha_k_val))
-
-consts_df <- pars_df
+grid_df <- expand.grid(par_xi    = seq(from = 0, to = 1, length.out = 100),
+                       par_tau_m = seq(from = 0, to = 60, length.out = 100))
 ```
 
-```{r, fig.cap = "Fig 4. Contact-tracing capacity's exploration space"}
-plot(pars_df, pch = 16, cex = 0.5, col = "steelblue",
-     xlab = expression(rho^k), ylab = expression(alpha^k))
-```
-
-
-```{r}
-scenarios_df <- data.frame(Testing_Scenario = rep(1:3, 2),
-                           Qd       = rep(c(data_df[1, 2],
-                                            alpha_d_val,
-                                   10 * alpha_d_val), 2),
-                  alpha_d  = rep(c(alpha_d_val,
-                                   alpha_d_val,
-                                   10 * alpha_d_val), 2),
-                  iota = c(rep(iota_vals[[2]], 3),
-                           rep(iota_vals[[3]], 3)))
-
-scenarios_list <-  scenarios_df |> transpose()
+```{r, fig.cap = "Fig 2. Social distancing exploration space"}
+plot(grid_df, pch = 16, cex = 0.5, col = "steelblue",
+     xlab = expression(xi), ylab = expression(tau^m))
 ```
 
 ```{r}
-# Testing capacity
-test_cap <- map_df(scenarios_list[1:3], \(sce_obj) {
+fp <- "./saved_objects/mob_ct_sens.rds"
+
+if(!file.exists(fp)) {
   
-    mdl <- read_xmile(fp_ct,
-                    stock_list = list(Qd = sce_obj$Qd,
-                                      Qk = Qk_init),
-                    const_list = c(bio_params,
-                                   par_zeta    = zeta_val,
-                                   par_alpha_d = sce_obj$alpha_d,
-                                   par_alpha_k = alpha_k_val,
-                                   par_rho_d   = rho_est,
-                                   par_rho_k   = rho_k_est,
-                                   par_iota_d  = iota_mid,
-                                   par_delta   = 0.60))
-    
-    sim_out <- sd_simulate(mdl$deSolve_components, start_time = 0,
-                         stop_time = 300, timestep = 1/64,
-                         integ_method = "euler") |>
-      filter(time - trunc(time) == 0) |> 
-      select(time, Qd) |> mutate(Scenario = sce_obj$Testing_Scenario)
-})
+  sim_mr_scn <- sd_sensitivity_run(mdl_ct_mob$deSolve_components, 
+                              consts_df = grid_df,
+                              start_time = 0, 
+                              stop_time = 365, timestep = 1/64,
+                              integ_method = "euler",
+                              multicore = TRUE,
+                              reporting_interval = 1) |> 
+    select(iter, time, C, C_in, par_xi, par_tau_m)
+  
+  
+  saveRDS(sim_mr_scn, fp)
+} else {
+  sim_mr_scn <- readRDS(fp)
+}
 ```
 
 ```{r}
-results_df <- map_df(scenarios_list, \(sce_obj) {
-  
-  iv  <- sce_obj$iota
-  tsc <- sce_obj$Testing_Scenario
+df_2 <- sim_mr_scn |> mutate(attack_rate = 100 * C/ pop_val) |> 
+  filter(time == 270,
+         par_xi < 0.8)
 
-  mdl <- read_xmile(fp_ct,
-                    stock_list = list(Qd = sce_obj$Qd,
-                                      Qk = Qk_init),
-                    const_list = c(bio_params,
-                                   par_zeta    = zeta_val,
-                                   par_alpha_d = sce_obj$alpha_d,
-                                   par_alpha_k = alpha_k_val,
-                                   par_rho_d   = rho_est,
-                                   par_rho_k   = rho_k_est,
-                                   par_iota_d  = iv,
-                                   par_delta   = 0.60))
-  
-  fn <- str_glue("./saved_objects/model_04_{tsc}_iota_{iv}.rds")
-
-  if(!file.exists(fn)) {
-
-    tic()
-
-    sens <- sd_sensitivity_run(mdl$deSolve_components,
-                               consts_df          = consts_df,
-                               start_time         = 0,
-                               stop_time          = 300,
-                               timestep           = 1 / 64,
-                               integ_method       = "euler",
-                               multicore          = TRUE,
-                               reporting_interval = 1/8)
-
-    df <- sens |>
-      select(time, S, iter, par_zeta, par_upsilon, C, var_theta, par_iota_d,
-             par_alpha_k, par_rho_k, var_zeta_k, C_in)
-    
-    peak_df <- df |> group_by(iter) |> 
-      filter(C_in == max(C_in)) |> ungroup() |> 
-      select(iter, C_in) |> 
-      rename(c_dot_max = C_in)
-
-    R_aux <- estimate_R0_ct(df$par_zeta, 0.1, df$var_theta, df$par_iota_d,
-                            df$var_zeta_k, bio_params)
-
-    df <- df |>
-      mutate(c        = C / pop_val,
-             Rt       = (S / pop_val) * R_aux,
-             test_sce = sce_obj$Testing_Scenario)
-
-    output <- df |>
-      mutate(diff_rt = 1 - Rt) |>
-      filter(diff_rt > 0) |>
-      group_by(iter, test_sce, par_iota_d) |>
-      filter(diff_rt == min(diff_rt)) |> ungroup() |>
-      select(iter, time, par_rho_k, par_alpha_k, test_sce, var_zeta_k,
-             par_zeta, par_iota_d) |>
-      mutate(time_star = time - ref_time) |> 
-      left_join(peak_df, by = "iter")
-
-    saveRDS(output, fn)
-
-    toc()
-
-  } else output <- readRDS(fn)
-
-  output
-})
+df_2 |> arrange(attack_rate) |> head(10) |> 
+  select(par_xi, par_tau_m, attack_rate)
 ```
 
-```{r, warning = FALSE, fig.height = 7, fig.width = 7}
-g <- plot_fig_08(comparison_ti_ct, test_cap, results_df)
+```{r, fig.height = 7}
+g <- plot_fig_08(sim_mob_df, sim_output, sim_mr_scn)
 
-ggsave("./plots/Fig_08_CT_analysis.pdf", plot = g, 
-       height = 7, width = 7, device = cairo_pdf)
+ggsave("./plots/Fig_08_Mobility.pdf", plot = g, 
+       height = 7.5, width = 7, device = cairo_pdf)
+
+g
 ```
 
 

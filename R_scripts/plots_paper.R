@@ -1,3 +1,5 @@
+clrs <- c("#51BBE0", "#C7B9A2", "#0D294A", "#AD1F4D", "#ECE6DB") # Palette 818
+
 plot_fig_02 <- function(df) {
 
   ggplot(df, aes(time, c)) +
@@ -14,461 +16,375 @@ plot_fig_02 <- function(df) {
       axis.ticks    = element_line(colour = "grey90"))
 }
 
-plot_fig_04 <- function(df1, df2, df3, df4, df5) {
+plot_fig_04 <- function(tv_df, f_t_df, tv_ct_df, f_ct_df) {
 
-  cols <- viridis(6, direction = -1)
+  g1 <- draw_fig_4A(tv_df, f_t_df)
+  g2 <- draw_fig_4B(tv_ct_df, f_ct_df)
 
-  tau_vals <- c(60, 30, 15)
+  (g1 | g2) +
+    plot_layout(guides = 'collect') +
+    plot_annotation(
+      tag_levels = 'A',
+      caption = "Solid blue line: Time-varying fraction") &
+    theme(legend.position = 'bottom',
+          plot.caption     = element_text(colour = clrs[[1]]))
 
-  lbl_df <- data.frame(iter = 1:3,
-                       time = c(78, 55, 28),
-                       Vaccine_supply = c(1e5, 1.5e5, 2e5),
-                       label = str_glue("tau^v~'= {tau_vals}'"))
-
-  ggplot(df1, aes(time, Vaccine_supply)) +
-    geom_line(aes(group = iter, colour = as.factor(iter))) +
-    scale_y_continuous(labels = comma) +
-    geom_text(data = lbl_df, aes(label = label, colour = as.factor(iter)),
-              parse = TRUE, size = 2) +
-    scale_colour_manual(values = c("#54B4EA", "#0363BB", "#023785")) +
-    labs(y = "Vaccination supply",
-         x = "Day") +
-    theme_classic() +
-    theme(axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 10),
-          axis.ticks      = element_line(colour = "grey90"),
-          legend.position = "none") -> g1
-
-  ggplot(df2, aes(par_rho_v, par_tau_v)) +
-    geom_point(aes(colour = c_star), size = 1, shape = 1, alpha = 0.75) +
-    facet_wrap(~ R0_lbl, labeller = label_parsed) +
-    geom_vline(xintercept = 0.15, alpha = 0.5, colour = "white",
-               linetype = "dashed") +
-    labs(x = parse(text = "'Vaccination capacity\\'s growth rate'~(rho^v)"),
-         y = parse(text = "'Vaccine availability'~(tau^v)"),
-         caption = "Vertical line: Estimated value") +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1),
-                           breaks = seq(0, 1, 0.2),
-                           name = parse(text = "c[300]^'*'")) +
-    theme_classic() +
-    theme(
-      legend.position = "none",
-      axis.title   = element_text(colour = "grey65", size = 9),
-      axis.line    = element_line(colour = "grey90"),
-      axis.text.x  = element_text(colour = "grey70", size = 7),
-      axis.text.y  = element_text(colour = "grey70", size = 9),
-      axis.ticks   = element_line(colour = "grey90"),
-      plot.caption = element_text(colour = "grey50"),
-      text = element_text(family = "Arial Unicode MS")) -> g2
-
-
-  ggplot(df3, aes(par_rho_v, par_tau_v)) +
-    geom_point(aes(colour = c_star), size = 1, shape = 1, alpha = 0.75) +
-    facet_wrap(~ iota_lbl, labeller = label_parsed) +
-    geom_vline(xintercept = 0.15, alpha = 0.5, colour = "white",
-               linetype = "dashed") +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1),
-                           breaks = seq(0, 1, 0.2),
-                           name = parse(text = "c[300]^'*'")) +
-    labs(x = parse(text = "'Vaccination capacity\\'s growth rate'~(rho^v)"),
-         y = parse(text = "'Vaccine availability'~(tau^v)"),
-         caption = "Vertical line: Estimated value") +
-    theme_classic() +
-    theme(
-      axis.title  = element_text(colour = "grey65", size = 9),
-      axis.line  = element_line(colour = "grey90"),
-      axis.text.x  = element_text(colour = "grey70", size = 7),
-      axis.text.y  = element_text(colour = "grey70", size = 9),
-      axis.ticks = element_line(colour = "grey90"),
-      plot.caption = element_text(colour = "grey50"),
-      text = element_text(family = "Arial Unicode MS")) -> g3
-
-
-
-  ggplot(df4, aes(time, value/pop_val)) +
-    geom_line(aes(linetype = variable), colour = "#023785") +
-    geom_vline(xintercept = 15, alpha = 0.4, colour = "grey60",
-               linewidth = 0.25) +
-    theme_classic() +
-    labs(y = "Value", x = "Day",
-         caption = "Vertical line: Vaccination starts") +
-    theme(legend.position = c(0.85, 0.7),
-          legend.title = element_text(size = 9, colour = "grey65"),
-          legend.text = element_text(size = 7),
-          axis.title  = element_text(colour = "grey65", size = 9),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = 11),
-          axis.ticks = element_line(colour = "grey90"),
-          plot.caption = element_text(colour = "grey50"),) -> g4
-
-  ggplot(df5, aes(time, ratio)) +
-    geom_line(colour = "#023785") +
-    scale_x_continuous(limits = c(15, 90), breaks = seq(15, 90, 15)) +
-    theme_classic() +
-    labs(y = "Ratio Demand/Supply", x = "Day") +
-    theme(axis.title  = element_text(colour = "grey65", size = 9),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = 11),
-          axis.ticks = element_line(colour = "grey90"),
-          plot.caption = element_text(colour = "grey50"),) -> g5
-
-  g6 <- (g4|g5) + plot_layout(widths = c(5, 2))
-
-  g1/(g2|g3)/ g6 + plot_annotation(tag_levels = 'A')
 }
 
-plot_fig_06 <- function(df1, df2, df3) {
+draw_fig_4A <- function(tv_df, f_t_df) {
 
-  cols <- rocket(7, direction = -1, )
-
-  ggplot(df, aes(time, value)) +
-    geom_line(aes(colour = model, linetype = model), alpha = 0.9) +
-    scale_color_manual(values = c("grey50", "#0363BB")) +
-    scale_linetype_manual(values = c("dotdash", "solid")) +
-    scale_x_continuous(limits = c(1, 150)) +
-    geom_hline(data = data.frame(name = "\u211c[t]", yint = 1),
-               aes(yintercept = yint), linetype = "dotted") +
-    facet_wrap(~name, ncol = 1, scales = "free", labeller = label_parsed) +
-    labs(y = "Value", x = "Day") +
+  ggplot(tv_df, aes(time, value)) +
+    facet_wrap(vars(name), scales = "free", ncol = 1) +
+    geom_line(data = f_t_df, aes(linetype = par_theta_d, group = par_theta_d),
+              colour = "grey60", alpha = 0.9) +
+    geom_line(colour = clrs[[1]]) +
+    scale_linetype_manual(values = c("solid", "dotted", "dashed")) +
+    scale_x_continuous(limits = c(0, 150)) +
+    labs(linetype = "Constant fraction",
+         x = "Day",
+         y = "Value") +
     theme_classic() +
-    theme(axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 8),
-          axis.ticks      = element_line(colour = "grey90"),
-          legend.position  = "bottom",
-          legend.margin    = margin(0, 0, 0, 0, "cm"),
-          legend.title = element_text(size = 9, colour = "grey65"),
-          legend.text = element_text(size = 7),
-          strip.text = element_text(margin = margin( b = 0.05, t = 0.05,
-                                                     unit = "cm")),
-          strip.background = element_rect(colour = "grey80",
-                                          linewidth = 0.5),
-          text = element_text(family = "Arial Unicode MS")) -> g1
-
-  df2 <- df2 |>
-    mutate(lbl_iota  = str_glue("iota^d~' = {par_iota_d}'"),
-           lbl_delta = str_glue("delta~' = {par_delta}'"))
-
-  ats <- 6 # axis text size
-
-
-  ggplot(df2, aes(par_rho_d, par_alpha_d)) +
-    geom_point(aes(colour = time_star), size = 1, shape = 1, alpha = 0.5) +
-    scale_y_continuous(breaks = c(10,40, 70, 100),
-                       limits = c(10, 100)) +
-    facet_grid(lbl_iota ~ lbl_delta, labeller = label_parsed) +
-    scale_colour_gradientn(values = c(0, 0.19999,
-                                      0.20, 0.39999,
-                                      0.40, 0.59999,
-                                      0.60, 0.7999,
-                                      0.8, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]]),
-                           limits = c(0, 30),
-                           breaks = seq(0, 30, 6),
-                           name = parse(text = "t^'*'"))  +
-   geom_point(data = df2 |> filter(iter == 5001),
-               colour = "#0363BB", shape = 1, size = 0.5) +
-    labs(x        = parse(text = "'Testing growth rate'~(rho^d)"),
-         y        = parse(text = "'Testing long-term capacity'~(alpha^d)"),
-         title    = parse(text = "delta~': Willingness to take a test'"),
-         subtitle = parse(text = "iota^d~': Willingness to isolate if positive'"),
-         caption  = "Highlighted point (in blue): Estimated value") +
-    theme_classic() +
-    theme(axis.title  = element_text(colour = "grey65"),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = ats),
-          axis.ticks = element_line(colour = "grey90"),
-          plot.title    = element_text(colour = "grey40", size = 9),
-          plot.subtitle = element_text(colour = "grey40", size = 9),
-          plot.caption = element_text(colour = "grey60", size = 8),
-          strip.background = element_rect(colour = "grey80",
-                                          linewidth = 0.5)) -> g2
-
-  df3 <- df3 |>
-    mutate(lbl_iota  = str_glue("iota^d~' = {par_iota_d}'"),
-           lbl_delta = str_glue("delta~' = {par_delta}'"))
-
-
-  ggplot(df3, aes(par_rho_d, par_alpha_d)) +
-    geom_point(aes(colour = time_star), size = 1, shape = 1, alpha = 0.5) +
-    facet_grid(lbl_iota ~ lbl_delta, labeller = label_parsed) +
-    scale_y_continuous(breaks = c(10,40, 70, 100),
-                       limits = c(10, 100)) +
-    scale_colour_gradientn(values = c(0, 0.09999,
-                                      0.10, 0.19999,
-                                      0.2, 0.2999,
-                                      0.3, 0.3999,
-                                      0.4, 0.5,
-                                      0.50001, 0.75, 1),
-                           colors = c(cols[[1]], cols[[1]],
-                                      cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]],
-                                      cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]],
-                                      cols[[6]], cols[[6]], cols[[7]]),
-                           limits = c(0, 60.1),
-                           breaks = c(seq(0, 30, 6), 60),
-                           name = parse(text = "t^'*'"))  +
-    geom_point(data = df3 |> filter(iter == 5001),
-               colour = "#0363BB", shape = 1, size = 0.5) +
-    labs(x       = parse(text = "rho^d"),
-         y       = parse(text = "alpha^d"),
-         caption = "Assumption: Testing pre-clinical individuals") +
-    theme_classic() +
-    theme(axis.title  = element_text(colour = "grey65"),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = ats),
-          axis.ticks = element_line(colour = "grey90"),
-          strip.background = element_rect(colour = "grey80",
-                                          linewidth = 0.5),
-          plot.caption = element_text(size = 8, colour = "grey40",
-                                      hjust = 0))-> g3
-
-  g4 <- (g2 / g3) + plot_layout(heights = c(5, 2))
-  (g1 | g4) + plot_layout(widths = c(3, 4)) + plot_annotation(tag_levels = 'A')
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80"))
 }
 
-plot_fig_08 <- function(df, df2, df3) {
+draw_fig_4B <- function(tv_ct_df, f_ct_df) {
 
-  fig_8A <- draw_fig_8A(df)
-
-  fig_8B <- draw_fig_8B(df2)
-
-  fig_8C <- draw_fig_8C(df3)
-
-  fig_8D <- draw_fig_8D(df3)
-
-  (fig_8A | fig_8B) / fig_8C / fig_8D + plot_annotation(tag_levels = 'A')
-}
-
-draw_fig_8A <- function(df) {
-
-  ggplot(df |> filter(time - trunc(time) == 0),
-         aes(time, value)) +
-    geom_line(aes(colour = model, linetype = model), alpha = 0.9) +
-    facet_wrap(~name, scales = "free", ncol = 1) +
-    scale_colour_manual(values = c("#0363BB", "grey50")) +
-    scale_linetype_manual(values = c("solid", "dotdash")) +
-    scale_x_continuous(limits = c(0, 100)) +
-    scale_y_continuous(n.breaks = 3) +
-    labs(x = "Day", y = "Value") +
+  ggplot(tv_ct_df, aes(time, value)) +
+    facet_wrap(vars(name), scales = "free", ncol = 1) +
+    geom_line(data = f_ct_df, aes(linetype = par_theta_k, group = par_theta_k),
+               colour = "grey60", alpha = 0.9) +
+    geom_line(colour = clrs[[1]]) +
+    scale_linetype_manual(values = c("solid", "dotted", "dashed")) +
+    scale_x_continuous(limits = c(0, 150)) +
+    labs(linetype = "Constant fraction",
+         x = "Day",
+         y = "Value") +
     theme_classic() +
-    theme(axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 7),
-          axis.ticks      = element_line(colour = "grey90"),
-          legend.position  = "bottom",
-          legend.margin    = margin(0, 0, 0, 0, "cm"),
-          legend.title = element_text(size = 9, colour = "grey65"),
-          legend.text = element_text(size = 7),
-          strip.background = element_rect(colour = "grey80", linewidth = 0.5),
-          strip.text = element_text(size = 7,
-                                    margin = margin(b = 0.1, t = 0.1,
-                                                    unit = "cm")),
-          text = element_text(family = "Arial Unicode MS"))
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80"))
 }
 
-draw_fig_8B <- function(df) {
+plot_fig_06 <- function(cap_df, inc_df, sim_output) {
+
+  ref_df <- sim_output |> filter(time <= 120)
+
+  g1 <- draw_fig_6A(cap_df, ref_df)
+  g2 <- draw_fig_6B(cap_df, ref_df)
+  g3 <- draw_fig_6C(inc_df, ref_df)
+
+  ((g1 | g2) / g3) +
+    plot_layout(heights = c(2.5, 4.5)) +
+    plot_annotation(tag_levels = 'A')
+}
+
+draw_fig_6A <- function(df, df2) {
 
   ggplot(df, aes(time, Qd)) +
-    geom_line(aes(linetype = as.factor(Scenario), group = Scenario), colour = "#0363BB",
-              linewidth = 0.5) +
-    scale_linetype_manual(values = c("solid", "dotted", "dashed", "dotdash"),
-                          name = "Testing scenario") +
-    labs(y = "Daily testing capacity \n per 1000 population", x = "Day") +
+    geom_line(data = df2, colour = "grey75", alpha = 0.5) +
+    geom_line(aes(group = Testing_scenario, colour = Testing_scenario)) +
+    scale_colour_manual(values = clrs[2:4]) +
+    labs(subtitle = "Testing capacity",
+         y = "Value",
+         x = "Day") +
     theme_classic() +
-    theme(axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 7),
-          axis.ticks      = element_line(colour = "grey90"),
-          legend.position  = "bottom",
-          legend.margin    = margin(0, 0, 0, 0, "cm"),
-          legend.title = element_text(size = 9, colour = "grey65"),
-          legend.text = element_text(size = 7),
-          text = element_text(family = "Arial Unicode MS"))
+    theme(legend.position = "none",
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+draw_fig_6B <- function(df, df2) {
+
+  ggplot(df, aes(time, Qk)) +
+    geom_line(data = df2, colour = "grey75",
+              alpha = 0.5) +
+    geom_line(aes(group = Tracing_scenario, linetype = Tracing_scenario)) +
+    scale_linetype_manual(values = c("solid", "dotted", "dashed")) +
+    labs(subtitle = "Contact tracing capacity",
+         y = "Value",
+         x = "Day") +
+    theme_classic() +
+    theme(legend.position = "none",
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+draw_fig_6C <- function(df, df2) {
+
+  ggplot(df, aes(time, 1000 * C_in / pop_val)) +
+    geom_line(data = df2, colour = "grey75",
+              alpha = 0.5) +
+    geom_line(aes(group = iter, colour = Testing_scenario,
+                  linetype = Tracing_scenario), alpha = 0.9) +
+    scale_linetype_manual(values = c("solid", "dotted", "dashed")) +
+    scale_colour_manual(values = clrs[2:4]) +
+    labs(subtitle = "Incidence rate [Cases per 1000 population]",
+         x = "Day",
+         y = "Value",
+         linetype = "Tracing scenario",
+         colour = "Testing scenario",
+         caption = "Grey solid line: Ref TTI") +
+    theme_classic() +
+    theme(legend.position = "bottom",
+          plot.caption = element_text(colour = "grey75"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+plot_fig_07 <- function(df, df2, ref_df, comp_df, inc_df) {
+
+  g1 <- draw_fig_7A(df, ref_df, comp_df, inc_df)
+  g2 <- draw_fig_7B(df2, ref_df)
+
+  (g1/g2) +
+    plot_annotation(tag_levels = 'A')
+
+}
+
+draw_fig_7A <- function(df, ref_df, comp_df, inc_df) {
+
+  iota_pct  <- percent(comp_df$par_iota_d)
+  delta_pct <- percent(comp_df$par_delta)
+
+  text_df <- data.frame(
+    iter = factor(1:3),
+    x = 110,
+    y = c(55, 65, 45),
+    lbl = str_glue("iota^d~' = {iota_pct}, '~delta~'= {delta_pct}'"))
+
+  ggplot(df |> filter(time <=150), aes(time, 1000 * C_in / pop_val)) +
+    geom_line(aes(group = iter, colour = as.factor(iter))) +
+    geom_line(data = ref_df |> filter(time <= 150), colour = "grey75") +
+    geom_line(data = inc_df |> filter(iter == 9),
+              colour = "grey75", linetype = "dashed") +
+    scale_colour_manual(values = clrs[2:4]) +
+    geom_text(data = text_df, aes(x = x, y = y, label = lbl, colour = iter),
+              parse = TRUE) +
+    annotate("text", x = 110, y = 75, colour = "grey75",
+             label = "iota^d~' = 51%, '~delta~'= 60%'", parse = TRUE) +
+    labs(x = "Day",
+         y = "Incidence rate",
+         title    = parse(text = "delta~': Willingness to take a test'"),
+         subtitle = parse(text = "iota^d~': Willingness to isolate/quarantine'"),
+         caption = "Grey solid line: Ref TTI\nGrey dashed line: Scenario t3 c3") +
+    theme_classic() +
+    theme(legend.position = "none",
+          plot.title = element_text(colour = "grey65", size = 10),
+          plot.subtitle = element_text(colour = "grey65", size = 10),
+          plot.caption = element_text(colour = "grey75"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90")) -> g1
+}
+
+draw_fig_7B <- function(df, ref_df) {
+
+  ggplot(df |> filter(time <=150),
+         aes(time, 1000 * C_in / pop_val)) +
+    geom_line(aes(group = iter, colour = as.factor(iter)), linetype = "dotdash") +
+    geom_line(data = ref_df |>
+                filter(time <=150), colour = "grey75", alpha = 0.25) +
+    scale_colour_manual(values = c("grey75", clrs[2:4])) +
+    labs(x = "Day",
+         y = "Incidence rate",
+         caption = "Grey solid line: Ref TTI") +
+    theme_classic() +
+    theme(legend.position = "none",
+          plot.title = element_text(colour = "grey65", size = 10),
+          plot.subtitle = element_text(colour = "grey65", size = 10),
+          plot.caption = element_text(colour = "grey75"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+plot_fig_08 <- function(df, df_ref, sens_df) {
+
+  df2 <- df |>
+    filter(iter == 2) |>
+    mutate(tracing_fraction = k/Dk * 100,
+           testing_fraction = var_theta * 100) |>
+    select(time, tracing_fraction, testing_fraction) |>
+    pivot_longer(-time) |>
+    mutate(name = case_when(name == "tracing_fraction" ~"Tracing fraction [%]",
+                            name == "testing_fraction" ~"Testing fraction [%]"))
+
+  df_ref2 <- df_ref |>
+    mutate(tracing_fraction = k/Dk * 100,
+           testing_fraction = var_theta * 100) |>
+    select(time, tracing_fraction, testing_fraction) |>
+    pivot_longer(-time) |>
+    mutate(name = case_when(name == "tracing_fraction" ~"Tracing fraction [%]",
+                            name == "testing_fraction" ~"Testing fraction [%]"))
+
+  g1 <- draw_fig_8A(df, df_ref)
+  g2 <- draw_fig_8B(df2, df_ref2)
+  g3 <- (plot_spacer() + draw_fig_8C(sens_df) + plot_spacer()) +
+    plot_layout(widths = c(1, 5, 1))
+
+  (g1/g2/g3) +
+    plot_layout(heights = c(2, 3, 2.5)) +
+    plot_annotation(tag_levels = 'A')
+
+}
+
+draw_fig_8A <- function(df, df_ref) {
+
+  ggplot(df, aes(time, 1000 * C_in / pop_val)) +
+    geom_line(aes(linetype = itv, group = iter, colour = as.factor(iter))) +
+    geom_line(data = df_ref |>
+                filter(time <= 360), colour = "grey75", linetype = "dotted") +
+    scale_linetype_manual(values = c("solid", "longdash"), guide = "none") +
+    scale_colour_manual(values = c("grey50" ,clrs[c(4, 2)])) +
+    annotate("text", label = "TTI", x = 77, y = 70, colour = "grey75") +
+    annotate("text", label = "MR", x = 200, y = 65, colour = "grey50") +
+    annotate("text", label = "TTI + MR (start day 0)", x = 280, y = 60,
+             colour = clrs[[4]], size = 3) +
+    annotate("text", label = "TTI + MR (start day 40)", x = 320, y = 28,
+             colour = clrs[[2]], size = 3) +
+    labs(x = "Day",
+         y = "Incidence rate") +
+    theme_classic() +
+    theme(legend.position = "none",
+          plot.caption = element_text(colour = "grey75"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+draw_fig_8B <- function(df, df_ref) {
+
+  ggplot(df |> filter(time > 0), aes(time, value)) +
+    facet_wrap(~name, ncol = 1) +
+    geom_line(colour = clrs[[4]]) +
+    geom_line(data = df_ref |>
+                filter(time > 0 & time <= 300), colour = "grey75",
+              linetype = "dotted") +
+    labs(x = "Day", y = "Value",
+         caption = "Dotted grey line: Ref TTI") +
+    theme_classic() +
+    theme(plot.caption = element_text(colour = "grey75"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80")) -> g2
 }
 
 draw_fig_8C <- function(df) {
 
-  cols <- rocket(7, direction = -1)
-
-  df <- df |>
-    mutate(label_ts = str_glue("'ts = {test_sce}'"),
-           lbl_iota  = str_glue("iota^d~' = {par_iota_d}'"))
-
-  ggplot(df, aes(par_rho_k, par_alpha_k)) +
-    geom_point(aes(colour = time_star), size = 1, shape = 1, alpha = 0.5) +
-    facet_grid(lbl_iota ~ label_ts, labeller = label_parsed) +
-    scale_colour_gradientn(values = c(0, 0.19999,
-                                      0.20, 0.39999,
-                                      0.40, 0.59999,
-                                      0.60, 0.7999,
-                                      0.8, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]]),
-                           limits = c(0, 30),
-                           breaks = seq(0, 30, 6),
-                           name = parse(text = "t^'*'"))  +
-   geom_point(data = df |> filter(iter == 5001),
-               colour = "#0363BB", shape = 1, size = 0.5) +
-   labs(x        = parse(text = "'CT growth rate'~(rho^k)"),
-        y        = parse(text = "'CT long-term capacity'~(alpha^k)"),
-        title    = "ts: Testing scenario",
-        subtitle = parse(text = "iota^d~': Willingness to quarantine'"),
-        caption  = "Highlighted point (in blue): Estimated value") +
-    theme_classic() +
-    theme(axis.title  = element_text(colour = "grey65"),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = 6),
-          axis.ticks = element_line(colour = "grey90"),
-          plot.title    = element_text(colour = "grey40", size = 9),
-          plot.subtitle = element_text(colour = "grey40", size = 9),
-          plot.caption = element_text(colour = "grey60", size = 8),
-          strip.background = element_rect(colour = "grey80",
-                                          linewidth = 0.5),
-          strip.text.y = element_text(size = 7))
-}
-
-draw_fig_8D <- function(df) {
-
-  cols <- plasma(5, direction = -1, )
-
-  df <- df |>
-    mutate(c_dot_star = c_dot_max / ref_peak,
-           label_ts = str_glue("'ts = {test_sce}'"),
-           lbl_iota  = str_glue("iota^d~' = {par_iota_d}'"))
-
-  ggplot(df, aes(par_rho_k, par_alpha_k)) +
-    geom_point(aes(colour = c_dot_star), size = 1, shape = 1, alpha = 0.5) +
-    facet_grid(lbl_iota ~ label_ts, labeller = label_parsed) +
-    scale_colour_gradientn(values = c(0,    0.199999,
-                                      0.2,  0.399999,
-                                      0.40, 0.59999,
-                                      0.60, 0.79999,
-                                      0.80, 1),
-                           colors = c(cols[[1]], cols[[1]],
-                                      cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]],
-                                      cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]]),
-                           limits = c(0.5, 1),
-                           breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1),
-                           name = parse(text = "p^'*'"))  +
-    geom_point(data = df |> filter(iter == 5001),
-               colour = "#0363BB", shape = 1, size = 0.5) +
-    labs(x = parse(text = "rho^k"),
-         y = parse(text = "alpha^k")) +
-    theme_classic() +
-    theme(axis.title  = element_text(colour = "grey65"),
-          axis.line  = element_line(colour = "grey90"),
-          axis.text  = element_text(colour = "grey70", size = 6),
-          axis.ticks = element_line(colour = "grey90"),
-          plot.title    = element_text(colour = "grey40", size = 9),
-          plot.subtitle = element_text(colour = "grey40", size = 9),
-          plot.caption = element_text(colour = "grey60", size = 5),
-          strip.background = element_rect(colour = "grey80",
-                                          linewidth = 0.5),
-          strip.text.y = element_text(size = 7))
-}
-
-plot_fig_09 <- function(df, df2, df3, df4) {
-
-  fig_09a <- draw_fig_9A(df, df4)
-
-  fig_09b <- draw_fig_9B(df2)
-
-  fig_09c <- draw_fig_9C(df3)
-
-  ((fig_09a / fig_09b) | fig_09c) + plot_annotation(tag_levels = 'A')
-}
-
-draw_fig_9A <- function(df, df4) {
-
-  ggplot(df, aes(time, C_in / pop_val)) +
-    geom_line(aes(colour = as.factor(iter))) +
-    geom_line(data = df4, colour = "grey70") +
-    labs(x = "Day", y = "Incidence rate") +
-    scale_colour_manual(values = c("#54B4EA", "#0363BB", "#023785")) +
-    geom_text(data = label_df, aes(x = x, y = y, label = label,
-                                   colour = as.factor(iter)),
-              parse = TRUE, size = 2.5) +
-    scale_x_continuous(limits = c(0, 250)) +
-    annotate("text", x = 25, y = 0.081, label = "No intervention",
-             colour = "grey70", size = 2.2) +
-    theme_classic() +
-    theme(axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 7),
-          axis.ticks      = element_line(colour = "grey90"),
-          legend.position = "none")
-}
-
-draw_fig_9B <- function(df) {
+  plot_df <- df|> filter(time %in% c(180, 270)) |>
+    mutate(lbl_time = str_glue("At day {time}"))
 
   cols <- viridis(6, direction = -1)
 
-  ggplot(df, aes(par_xi, par_tau_m)) +
-    geom_point(aes(colour = c_star)) +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1),
-                           breaks = seq(0, 1, 0.2),
-                           name = parse(text = "c[600]^'*'")) +
+  ggplot(plot_df, aes(x = par_xi, y = par_tau_m, fill =  100 * C/ pop_val)) +
+    facet_wrap(~lbl_time, nrow = 1) +
+    geom_raster() +
+    scale_fill_gradientn(values  = seq(0, 1, 0.2),
+                         colours = cols,
+                         limits = c(0, 100),
+                         breaks = seq(0, 1, 0.2) * 100,
+                         name = "Attack rate [%]") +
     labs(x = parse(text = "'Stringency'~(xi)"),
-         y = parse(text = "'Start of restriction'~(tau^m)")) +
+         y = parse(text = "'Start of intervention'~(tau^m)")) +
     theme_classic() +
-    theme(axis.title   = element_text(colour = "grey65", size = 9),
-          axis.line    = element_line(colour = "grey90"),
-          axis.text.x  = element_text(colour = "grey70", size = 7),
-          axis.text.y  = element_text(colour = "grey70", size = 9),
-          axis.ticks   = element_line(colour = "grey90"))
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80"))
 }
 
-draw_fig_9C <- function(df) {
 
-  ggplot(df, aes(time, value)) +
-    geom_line(aes(colour = as.factor(iter), group = iter,
-                  linetype = as.factor(iter)), alpha = 0.75) +
-    scale_linetype_manual(values = c("dotdash", "solid")) +
-    facet_wrap(~name, scales = "free", ncol = 1) +
-    scale_x_continuous(limits = c(1, 600)) +
-    scale_colour_manual(values = c("grey50", "#0363BB")) +
-    geom_vline(xintercept = 180, colour = "grey75", linetype = "dotted") +
-    labs(colour = "Social distancing?", linetype = "Social distancing?",
-         x = "Day", y = "Value",
-         caption = "Dotted vertical line: Start of vaccination") +
+plot_fig_11 <- function(df, base_df, npi_df, vacc_df) {
+
+  g1 <- draw_fig_11A(df, base_df, npi_df)
+  g2 <- draw_fig_11B(df, base_df, npi_df)
+  g3 <- draw_fig_11C(vacc_df)
+
+  (g1/g2/g3) +
+    plot_annotation(tag_levels = 'A')
+}
+
+draw_fig_11A <- function(df, base_df, npi_df) {
+
+  ggplot(df, aes(time, 1000 * C_in/pop_val)) +
+    geom_line(colour = clrs[[1]]) +
+    geom_line(data = base_df, colour = "grey75", alpha = 0.75, linetype = "dotdash") +
+    geom_line(data = npi_df, colour = "grey50", linetype = "dashed",
+              alpha = 0.75) +
+    annotate("text", label = "Base case", x = 70, y = 65, colour = "grey75",
+             size = 2.5) +
+    annotate("text", label = "TTI + MR", x = 258, y = 55, colour = "grey50",
+             size = 2.5) +
+    annotate("text", label = "TTI + MR + V", x = 270, y = 25, colour = clrs[[1]],
+             size = 2.5) +
+    geom_vline(xintercept = 180, colour = clrs[[1]], alpha = 0.15) +
+    labs(x = "",
+         y = "Incidence rate") +
+    theme_classic() +
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+draw_fig_11B <- function(df, base_df, npi_df) {
+
+  ggplot(df, aes(time, 100 * C / pop_val)) +
+    geom_line(colour = clrs[[1]]) +
+    geom_line(data = base_df, colour = "grey75", linetype = "dotdash") +
+    geom_line(data = npi_df, colour = "grey50", linetype = "dashed") +
+    annotate("text", label = "Base case", x = 78, y = 88, colour = "grey75",
+             size = 2.5) +
+    annotate("text", label = "TTI + MR", x = 265, y = 80, colour = "grey50",
+             size = 2.5) +
+    annotate("text", label = "TTI + MR + V", x = 275, y = 55,
+             colour = clrs[[1]], size = 2.5) +
+    geom_vline(xintercept = 180, colour = clrs[[1]], alpha = 0.15) +
+    scale_y_continuous(limits = c(0, 100)) +
+    labs(x = "Day",
+         y = "Attack rate [%]") +
+    theme_classic() +
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
+}
+
+draw_fig_11C <- function(df) {
+
+  ggplot(df, aes(time, 100 * C / pop_val)) +
+    geom_line(aes(colour = wln_scn, group = iter, linetype = cap_scn)) +
+    scale_colour_manual(values = clrs[c(1, 2)]) +
+    scale_linetype_manual(values = c("solid", "dotted")) +
+    scale_y_continuous(limits = c(0, 100)) +
+    geom_vline(xintercept = 180, colour = clrs[[1]], alpha = 0.15) +
+    labs(colour   = "Vaccination willingness",
+         linetype = "Capacity",
+         y        = "Attack rate [%]",
+         caption  = "Vertical line: Start of vaccination") +
     theme_classic() +
     theme(legend.position = "bottom",
-          axis.title      = element_text(colour = "grey65", size = 9),
-          axis.line       = element_line(colour = "grey90"),
-          axis.text       = element_text(colour = "grey70", size = 7),
-          axis.ticks      = element_line(colour = "grey90"),
-          strip.background = element_rect(colour = "grey80", linewidth = 0.5),
-          strip.text = element_text(size = 7,
-                                    margin = margin(b = 0.1, t = 0.1,
-                                                    unit = "cm")),
-          plot.caption = element_text(colour = "grey75", size = 7))
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          plot.caption     = element_text(colour = clrs[[1]]))
 }
-
-
-

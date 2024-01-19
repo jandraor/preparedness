@@ -5,66 +5,44 @@ library(viridis)
 
 source("./R_scripts/plots_paper.R")
 
-plot_2d_sens <- function(df, x, y) {
+plot_final_size <- function(df) {
 
-  cols <- viridis(6, direction = -1)
-
-  ggplot(df, aes(.data[[x]], .data[[y]])) +
-    geom_point(aes(colour = c_inf), size = 2) +
-    geom_vline(xintercept = 0.045, alpha = 0.5, colour = "grey50",
-               linetype = "dashed") +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1),
-                           breaks = seq(0, 1, 0.2)) +
-    theme_classic()
+  ggplot(df, aes(c)) +
+    geom_histogram(aes(colour = model), fill = "white") +
+    facet_wrap(~model, ncol = 1) +
+    scale_colour_manual(values = c("#2E71AF", "#FFBE82")) +
+    labs(x = parse(text = "'Attack rate at day 150'~(c[150])"),
+         y = "Count") +
+    theme_minimal()
 }
 
-plot_2d_sens_faceted <- function(df, x, y, z, x_lab = "", y_lab = "",
-                                 sub_txt = "") {
+plot_output_comparison <- function(df) {
 
-  cols <- viridis(6, direction = -1)
-
-  ggplot(df, aes(.data[[x]], .data[[y]])) +
-    geom_point(aes(colour = c_inf), size = 2) +
-    # geom_vline(xintercept = 0.045, alpha = 0.5, colour = "grey50",
-    #            linetype = "dashed") +
-    labs(x = parse(text = x_lab), y = parse(text = y_lab),
-         subtitle = parse(text = sub_txt)) +
-    facet_wrap(vars(.data[[z]]), nrow = 1, labeller = label_parsed) +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1),
-                           breaks = seq(0, 1, 0.2)) +
-    theme_classic()
+  ggplot(df, aes(time, 1000 * C_in/pop_val)) +
+    geom_line(aes(colour = model, linetype = model), alpha = 0.5,
+              linewidth = 1.5) +
+    facet_wrap(~itv, ncol = 1) +
+    scale_linetype_manual(values = c("solid", "dotdash")) +
+    scale_colour_manual(values = c("grey70", "#0363BB")) +
+    scale_x_continuous(limits = c(0, 250)) +
+    theme_classic() +
+    labs(x = "Day", y = "Incidence rate")
 }
 
-plot_ct_sens <- function(df) {
+plot_fit <- function(df_sim, df_data) {
 
-  cols <- viridis::rocket(6, direction = -1)
-
-  ggplot(df, aes(par_rho_k, Qk)) +
-    geom_point(aes(colour = c_prime), size = 2) +
-    facet_wrap(~time, ncol = 4) +
-    geom_vline(xintercept = 0.045, alpha = 0.5, colour = "grey50",
-               linetype = "dashed") +
-    scale_colour_gradientn(values = c(0, 0.19999, 0.2, 0.2001, 0.39999, 0.4,
-                                      0.4001, 0.5999, 0.6, 0.6001, 0.7999, 0.8,
-                                      0.8001, 1),
-                           colors = c(cols[[1]], cols[[1]], cols[[2]], cols[[2]],
-                                      cols[[3]], cols[[3]], cols[[4]], cols[[4]],
-                                      cols[[5]], cols[[5]], cols[[6]], cols[[6]]),
-                           limits = c(0, 1.000001),
-                           breaks = seq(0, 1, 0.2)) +
-    theme_classic()
+  ggplot(df_sim, aes(time, Q)) +
+    geom_line() +
+    geom_point(data = df_data, aes(y = value), colour = clrs[[1]]) +
+    labs(x = "Day", y = "Capacity",
+         caption = "Points: Data") +
+    theme_classic() +
+    theme(axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          plot.caption     = element_text(colour = clrs[[1]]))
 }
+
 
 
