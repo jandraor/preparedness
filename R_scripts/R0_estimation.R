@@ -16,30 +16,7 @@ estimate_R0 <- function(par_beta, bio_params) {
   par_beta * (term_1 + term_2)
 }
 
-# R0 for testing & isolation model
-estimate_R0_ti <- function(var_theta, par_beta, par_iota, bio_params) {
-
-  par_eta   <- bio_params$par_eta
-  par_gamma <- bio_params$par_gamma
-  par_kappa <- bio_params$par_kappa
-  par_sigma <- bio_params$par_sigma
-  par_omega <- bio_params$par_omega
-  par_nu    <- bio_params$par_nu
-
-  term_1 <- par_gamma * par_kappa * par_omega
-
-  term_2 <- (1 - var_theta * par_iota) * par_kappa * par_nu * par_omega
-
-  term_3 <- par_gamma * par_eta * (par_nu - par_nu * par_omega)
-
-  term_4 <- term_1 + term_2 + term_3
-
-  term_5 <- par_gamma * par_kappa * par_nu
-
-  par_beta * term_4 / term_5
-}
-
-estimate_R0_ct <- function(par_zeta, par_upsilon, var_theta, par_iota,
+estimate_R0_tti <- function(par_zeta, par_upsilon, var_theta, par_iota,
                            var_zeta_k, bio_params) {
 
   par_eta   <- bio_params$par_eta

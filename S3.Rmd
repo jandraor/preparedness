@@ -54,9 +54,12 @@ Qk_0 <- ct_cap_pars$Qk
 Qm_0 <- 90
 ```
 
-This electronic supplementary material aims to document in a reproducible manner
-the simulation results presented in the main text regarding the **vaccination** 
-structure.
+This electronic supplementary material supports the results presented in the 
+main text regarding vaccination and the comprehensive intervention.
+Specifically, this HTML file is the rendered version of a dynamic document (R 
+markdown) containing the *R* code that simulates the models and produces the
+plots shown in the main text. Additionally, this file includes supplementary 
+information to complement the discussion in the main text.
 
 # Vaccination sub-model
 
@@ -113,7 +116,7 @@ Qv_0        <- data_vacc$value |> head(1)
 par_alpha_v <- data_vacc$value |> tail(1)
 ```
 
-```{r}
+```{r, fig.cap = "Fig 1. Vaccination capacity"}
 plot_fit(est_obj$sim, data_vacc)
 ```
 
@@ -280,7 +283,7 @@ sim_output_v <- sd_simulate(mdl_v$deSolve_components,
 ```
 
 
-```{r, warning = FALSE, fig.height = 8}
+```{r, warning = FALSE, fig.height = 8, fig.cap = "Fig 2. Validation"}
 sgl_int <- bind_rows(sim_output_b, sim_output_TI, sim_output_CT, sim_output_MR,
                      sim_output_v)
 
@@ -404,12 +407,12 @@ sim_npi <- sd_simulate(mdl_npi$deSolve_components, start_time = 0,
   filter(time %in% seq(0, 365, 1/8))
 ```
 
+This code produces Fig 11 in the main text.
+
 ```{r, fig.height = 7}
 g <- plot_fig_11(sim_sth, base_sim, sim_npi, sim_vacn_scn)
 
 ggsave("./plots/Fig_11_Vaccination_sim.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
-
-g
 ```
 

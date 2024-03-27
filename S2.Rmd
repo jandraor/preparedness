@@ -40,9 +40,13 @@ names(bio_params) <- bio_df$Parameter
 delta_val <- 0.6
 ```
 
-This electronic supplementary material aims to document, in a reproducible 
-manner, the simulation results presented in the main text regarding the 
-sub-models representing the non-pharmaceutical interventions  (**NPIs**).  
+This electronic supplementary material supports the results presented in the 
+main text regarding the sub-models representing the non-pharmaceutical 
+interventions  (**NPIs**). Specifically, this HTML file is the rendered version 
+of a dynamic document (R markdown) containing the *R* code that simulates the 
+models and produces the plots shown in the main text. Additionally, this file
+includes supplementary information to complement the discussion in the main 
+text.
 
 
 # Testing & Isolation (*T&I*)
@@ -132,7 +136,7 @@ tc_pars <- data.frame(name  = c("alpha_d", "rho_d", "Qd"),
   write_csv("./Data/Testing_capacity_pars.csv")
 ```
 
-```{r}
+```{r, fig.cap = "Fig 1. Testing capacity"}
 plot_fit(est_obj$sim, data_df)
 ```
 
@@ -241,6 +245,56 @@ Compared to the T&I models (*2A_TI_fixed_fractions.stmx* &
   \end{aligned}
 \end{equation}
 
+## $\Re_0$ analytical expression
+
+We employ the Next Generation Matrix method to derive an analytical expression
+for the basic reproduction number. See file *./Mathematica_notebooks/TTI_RO.nb* 
+in the Github [repository](https://github.com/jandraor/preparedness).
+
+### F matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/CT_F_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
+```
+
+### V matrix
+
+```{r, message = FALSE}
+F_matrix           <- read_csv("./Data/CT_V_matrix.csv", show_col_types = FALSE)
+c_names            <- colnames(F_matrix)
+c_names[1]         <- ""
+colnames(F_matrix) <- c_names
+
+F_matrix |>
+  kbl(escape = FALSE) |> kable_styling(full_width = FALSE)
+```
+
+### Spectral radius (largest eigenvalue)
+
+\begin{equation}
+
+a = \sqrt{\gamma ^4 \kappa ^2 \upsilon ^2 \left((\gamma  (\zeta  \eta  \nu  (\omega -1)-\zeta  \kappa  \omega + \zeta^k \theta  \kappa  \omega )+\zeta  \kappa  \nu  \omega  (\theta  \iota^d -1))^2-4 \gamma  \zeta  \zeta^k \theta  (\iota^d -1) \kappa  \omega  (\gamma  \eta  (\nu -\nu  \omega )+\gamma  \kappa  \omega +\kappa  \nu  \omega )\right)}
+
+\end{equation}
+
+\begin{equation}
+
+b = \gamma ^3 \kappa  \upsilon  (\zeta  \eta  (\nu -\nu  \omega )+\zeta  \kappa  \omega - \zeta^k \theta  \kappa  \omega )+\gamma ^2 \zeta  \kappa ^2 \nu  \upsilon  \omega  (1-\theta  \iota^d )
+
+\end{equation}
+
+\begin{equation}
+
+\Re_0 = \frac{a + b}{2 \gamma ^3 \kappa ^2 \nu}
+
+\end{equation}
+
 ## Comparison
 
 ### Fixed testing & tracing fractions
@@ -308,7 +362,7 @@ rho_k_est   <- est_obj$estimate
 ```
 
 
-```{r}
+```{r, fig.cap = "Fig 2. Tracing capacity"}
 plot_fit(est_obj$sim, data_FTE)
 ```
 
@@ -350,6 +404,23 @@ sim_output <- sd_simulate(ds_inputs, start_time = 0, stop_time = 300,
   mutate(c = C / N)
 ```
 
+Then, we calculate the effective reproduction number...
+
+```{r}
+Re_df <- sim_output |> 
+  mutate(R_number = estimate_R0_tti(par_zeta = par_zeta,
+                                   par_upsilon = par_upsilon,
+                                   var_theta = var_theta,
+                                   par_iota = par_iota_d,
+                                   var_zeta_k = var_zeta_k,
+                                   bio_params = bio_params),
+         s = S / N,
+         Rt = R_number * s) |> 
+  select(time, Rt)
+```
+
+and indicators over time.
+
 ```{r}
 # Time-varying (tv) contact tracing (ct)
 tv_ct_df <- sim_output  |> select(time, c, k, Qk, Dk) |> 
@@ -369,7 +440,9 @@ This table compares the attack rate at day 150 between the two assumptions
 (fixed and time-varying testing rates).
 
 ```{r}
-ct_tv_df <- sim_output |> filter(time == 150) |>
+# Indicators from the scenario with time-varying fractions at day 150
+
+tv_ind_150 <- sim_output |> filter(time == 150) |>
   mutate(par_theta_k = "Time-varying",
          c         = percent(round(c, 2))) |>
   select(par_theta_k, c, C)
@@ -377,7 +450,7 @@ ct_tv_df <- sim_output |> filter(time == 150) |>
 c_sens_df |> filter(time == 150) |> select(par_theta_k, c, C) |>
   mutate(par_theta_k = percent(par_theta_k),
          c         = percent(round(c, 2))) |>
-  bind_rows(ct_tv_df) |>
+  bind_rows(tv_ind_150) |>
   gt() |>
     cols_label(
     par_theta_k = html("Testing & tracing fraction (&theta;)"),
@@ -390,13 +463,13 @@ c_sens_df |> filter(time == 150) |> select(par_theta_k, c, C) |>
       rows = 4))
 ```
 
-```{r, fig.height = 7}
-g <- plot_fig_04(tv_df, f_t_df, tv_ct_df, f_ct_df)
+This code produces Fig 4 in the main text.
+
+```{r, fig.height = 7.5}
+g <- plot_fig_04(tv_df, f_t_df, tv_ct_df, f_ct_df, Re_df)
 
 ggsave("./plots/Fig_04_TI_CT.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
-
-g
 ```
 
 ## Testing and tracing scenarios
@@ -515,13 +588,13 @@ inc_df <- sim_sce_df |> select(iter, time, C_in) |>
   left_join(scenarios_df[, c("iter", "Testing_scenario", "Tracing_scenario")])
 ```
 
+This code produces Fig 6 in the main text.
+
 ```{r}
 g <- plot_fig_06(cap_df, inc_df, sim_output)
 
 ggsave("./plots/Fig_06_TI_CT_Scenarios.pdf", plot = g, 
        height = 7, width = 7, device = cairo_pdf)
-
-g
 ```
 
 ## Compliance scenarios
@@ -581,13 +654,13 @@ mdl_4d_sce_df <- sd_sensitivity_run(mdl_4d$deSolve_components,
                                     reporting_interval = 1 / 8)
 ```
 
+This code produces Fig 7 in the main text.
+
 ```{r, fig.height = 7}
 g <- plot_fig_07(comp_sce_df, mdl_4d_sce_df, sim_output, comp_scn, inc_df)
 
 ggsave("./plots/Fig_07_CT_sensitivity.pdf", plot = g, 
        height = 6, width = 7, device = cairo_pdf)
-
-g
 ```
 
 
@@ -622,15 +695,17 @@ three scenarios:
 ```{r}
 # First scenario: Just MR
 # Second scenario: TTI + MR, starting at 0
-# Third scenario: TTI + MR, starting at 40
-intv_df <- data.frame(par_tau_m = c(0, 0, 40),
+# Third scenario: TTI + MR, starting at 40 & optimised stringency
+
+intv_df <- data.frame(par_xi = c(0.8, 0.8, 0.62),
+                      par_tau_m = c(0, 0, 40),
                       Qd = c(0, Qd_init, Qd_init),
                       Qm = c(90, 90, 90),
                       itv = c("MR", "TTI + MR", "TTI + MR"),
                       iter = 1:3)
 
 sim_mob_df <- sd_sensitivity_run(mdl_ct_mob$deSolve_components,
-                                 consts_df = select(intv_df, par_tau_m),
+                                 consts_df = select(intv_df, par_tau_m, par_xi),
                                  stocks_df = select(intv_df, Qd, Qm),
                                  start_time = 0,
                                  stop_time = 360, 
@@ -644,7 +719,7 @@ sim_mob_df <- sd_sensitivity_run(mdl_ct_mob$deSolve_components,
 
 This code performs a sensitivity analysis on the *TTI + MR* model. In 
 particular, we draw 10 000 points  from a two-dimensional uniform space defined
-by the compliance parameter ($\xi$) and the time at which mobility restrictions
+by the stringency parameter ($\xi$) and the time at which mobility restrictions
 are introduced ($\tau^m$). We subsequently use these points to configure and
 simulate the *TTI + MR* model. For each simulation, we estimate the
 attack rate at days 180 & 270.
@@ -656,7 +731,7 @@ grid_df <- expand.grid(par_xi    = seq(from = 0, to = 1, length.out = 100),
                        par_tau_m = seq(from = 0, to = 60, length.out = 100))
 ```
 
-```{r, fig.cap = "Fig 2. Social distancing exploration space"}
+```{r, fig.cap = "Fig 3. Samples"}
 plot(grid_df, pch = 16, cex = 0.5, col = "steelblue",
      xlab = expression(xi), ylab = expression(tau^m))
 ```
@@ -682,22 +757,81 @@ if(!file.exists(fp)) {
 }
 ```
 
-```{r}
-df_2 <- sim_mr_scn |> mutate(attack_rate = 100 * C/ pop_val) |> 
-  filter(time == 270,
-         par_xi < 0.8)
-
-df_2 |> arrange(attack_rate) |> head(10) |> 
-  select(par_xi, par_tau_m, attack_rate)
-```
+This code produces Fig 8 in the main text.
 
 ```{r, fig.height = 7}
 g <- plot_fig_08(sim_mob_df, sim_output, sim_mr_scn)
 
 ggsave("./plots/Fig_08_Mobility.pdf", plot = g, 
        height = 7.5, width = 7, device = cairo_pdf)
+```
 
-g
+## The narrow band
+
+Theoretically, the rate of new cases begins its decline when the effective 
+reproduction number reaches 1 ($\Re_t = 1$). This change in dynamics happens
+when the proportion of susceptible individuals ($s$) falls below the herd
+immunity threshold ($\frac{1}{\Re_0}$). If a population could be allowed to
+develop immunity naturally until this threshold is reached, followed by strict 
+mobility restrictions to drive cases near zero, then lifting those restrictions
+would not trigger a re-emergence. In the context of the no-intervention scenario
+with $\Re_0 =3$, the target for the susceptible fraction is $\frac{1}{3}$, which
+implies that at most *33%* of the population should remain susceptible or that 
+at least *67%* should be infected. However, as we saw previously, *TTI* reduces
+$\Re_0$ to *2.25* before saturation, implying a new target susceptible fraction 
+of $\frac{1}{2.25}$, approximately *44%*.
+
+To corroborate this insight about the target susceptible fraction changing with
+*TTI*, we simulate three scenarios (as shown in the figure below). The first 
+scenario (blue lines) corresponds to the case where only *TTI* is employed. As 
+we have seen previously, the susceptible fraction collapses simply because the
+infection runs its course as though there were no interventions. The second 
+scenario (beige lines) involves the implementation of *TTI + MR*, where mobility
+restrictions are deployed at day 40 with a stringency of 0.8. Although this
+intervention reduces $\Re_t$ below the epidemic threshold (dashed line), the 
+susceptible fraction remains above the target (dotted line). Therefore, once the
+mobility restrictions are lifted, $\Re_t$ rises above the epidemic threshold, 
+leading to a second wave of infections. In contrast, the ideal scenario (*3*) 
+with a stringency of 0.62 also drives $\Re_t$ below 1 but allows the susceptible
+fraction to reach the intended target. Consequently, when mobility restrictions
+are lifted, $\Re_t$ cannot surge to produce a new outbreak.
+
+```{r}
+mob_scn <- data.frame(par_xi = c(0, 0.8, 0.62),
+                       par_tau_m = 40) |> 
+  mutate(Scenario = row_number(), .before = everything())
+
+gt(mob_scn) |> 
+  cols_label(
+    par_xi    = html("Stringency (&xi;)"),
+    par_tau_m = html("Start of intervention (&tau;<sup>m</sup>)")
+  )
+```
+
+
+```{r}
+# Sensitivity of stringency
+sim_str_df <- sd_sensitivity_run(mdl_ct_mob$deSolve_components,
+                                 consts_df = select(mob_scn, par_xi, par_tau_m),
+                                 start_time = 0,
+                                 stop_time = 365, 
+                                 timestep = 1 / 64, integ_method = "euler",
+                                 multicore = TRUE, n_cores = 3)
+```
+
+```{r, fig.cap = "Fig 4. Effect of stringency on disease dynamics"}
+sim_str_df <- sim_str_df |> 
+  mutate(R_number = estimate_R0_tti(par_zeta = var_zeta_t,
+                                   par_upsilon = par_upsilon,
+                                   var_theta = var_theta,
+                                   par_iota = par_iota_d,
+                                   var_zeta_k = var_zeta_k,
+                                   bio_params = bio_params),
+         s = S / N,
+         Rt = R_number * s) |> 
+  filter(time > 0)
+
+plot_stringency_comparison(sim_str_df)
 ```
 
 

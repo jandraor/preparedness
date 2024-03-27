@@ -44,5 +44,46 @@ plot_fit <- function(df_sim, df_data) {
           plot.caption     = element_text(colour = clrs[[1]]))
 }
 
+plot_stringency_comparison <- function(df) {
+
+  g1 <- ggplot(df |>
+                 mutate(c = C / N,
+                        Scenario = as.factor(iter)) , aes(time, Rt)) +
+    geom_line(aes(group = Scenario, colour = Scenario)) +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    scale_colour_manual(values = clrs[c(1, 2, 4)]) +
+    labs(x = "Days",
+         y = parse(text = "\u211c[t]"),
+         caption = "Dashed line: Epidemic threshold") +
+    theme_classic() +
+    theme(text = element_text(family = "Arial Unicode MS"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.title.y     = element_text(angle = 0, vjust = 0.5),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80"))
+
+  g2 <- ggplot(df |>
+                 mutate(c = C / N,
+                        Scenario = as.factor(iter)) , aes(time, s)) +
+    scale_colour_manual(values = clrs[c(1, 2, 4)]) +
+    geom_line(aes(group = Scenario, colour = Scenario)) +
+    geom_hline(yintercept = 0.44, linetype = "dotted") +
+    labs(x       = "Days",
+         y       = "Susceptble fraction",
+         caption = "Dotted line: Herd immunity fraction") +
+    theme_classic() +
+    theme(text = element_text(family = "Arial Unicode MS"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"),
+          strip.background = element_rect(colour = "grey80"))
+
+  (g1/g2) +
+    plot_layout(guides = 'collect')
+}
+
 
 

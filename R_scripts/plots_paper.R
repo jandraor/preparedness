@@ -16,18 +16,20 @@ plot_fig_02 <- function(df) {
       axis.ticks    = element_line(colour = "grey90"))
 }
 
-plot_fig_04 <- function(tv_df, f_t_df, tv_ct_df, f_ct_df) {
+plot_fig_04 <- function(tv_df, f_t_df, tv_ct_df, f_ct_df, re_df) {
 
   g1 <- draw_fig_4A(tv_df, f_t_df)
   g2 <- draw_fig_4B(tv_ct_df, f_ct_df)
+  g3 <- draw_fig_4C(re_df)
 
-  (g1 | g2) +
-    plot_layout(guides = 'collect') +
+  (g1 | g2) / (plot_spacer() + g3 + plot_spacer()) +
+    plot_layout(heights = c(6, 1),
+                guides = 'collect') +
     plot_annotation(
       tag_levels = 'A',
-      caption = "Solid blue line: Time-varying fraction") &
-    theme(legend.position = 'bottom',
-          plot.caption     = element_text(colour = clrs[[1]]))
+      subtitle = "Solid blue line: Time-varying fraction") &
+    theme(legend.position = 'top',
+          plot.subtitle     = element_text(colour = clrs[[1]]))
 
 }
 
@@ -44,9 +46,10 @@ draw_fig_4A <- function(tv_df, f_t_df) {
          x = "Day",
          y = "Value") +
     theme_classic() +
-    theme(axis.title       = element_text(colour = "grey65", size = 9),
+    theme(text = element_text(family = "Arial Unicode MS"),
+          axis.title       = element_text(colour = "grey65", size = 9),
           axis.line        = element_line(colour = "grey90"),
-          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.text        = element_text(colour = "grey70", size = 7),
           axis.ticks       = element_line(colour = "grey90"),
           strip.background = element_rect(colour = "grey80"))
 }
@@ -64,11 +67,31 @@ draw_fig_4B <- function(tv_ct_df, f_ct_df) {
          x = "Day",
          y = "Value") +
     theme_classic() +
-    theme(axis.title       = element_text(colour = "grey65", size = 9),
+    theme(text = element_text(family = "Arial Unicode MS"),
+          axis.title       = element_text(colour = "grey65", size = 9),
           axis.line        = element_line(colour = "grey90"),
-          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.text        = element_text(colour = "grey70", size = 7),
           axis.ticks       = element_line(colour = "grey90"),
           strip.background = element_rect(colour = "grey80"))
+}
+
+draw_fig_4C <- function(df) {
+
+  df <- filter(df, time >=0.1 )
+
+  ggplot(df, aes(time, Rt)) +
+    geom_line(colour = clrs[[1]]) +
+    labs(x = "Day",
+         y = parse(text = "\u211c[t]"),
+         caption =  parse(text = "'Dotdash line:'~\u211c[0]")) +
+    geom_hline(yintercept = 3, linetype = "dotdash") +
+    theme_classic() +
+    theme(text = element_text(family = "Arial Unicode MS"),
+          axis.title       = element_text(colour = "grey65", size = 9),
+          axis.title.y     = element_text(angle = 0, vjust = 0.5),
+          axis.line        = element_line(colour = "grey90"),
+          axis.text        = element_text(colour = "grey70", size = 8),
+          axis.ticks       = element_line(colour = "grey90"))
 }
 
 plot_fig_06 <- function(cap_df, inc_df, sim_output) {
@@ -254,7 +277,7 @@ draw_fig_8A <- function(df, df_ref) {
     annotate("text", label = "MR", x = 200, y = 65, colour = "grey50") +
     annotate("text", label = "TTI + MR (start day 0)", x = 280, y = 60,
              colour = clrs[[4]], size = 3) +
-    annotate("text", label = "TTI + MR (start day 40)", x = 320, y = 28,
+    annotate("text", label = "TTI + MR (start day 40)", x = 115, y = 20,
              colour = clrs[[2]], size = 3) +
     labs(x = "Day",
          y = "Incidence rate") +
@@ -347,16 +370,23 @@ draw_fig_11A <- function(df, base_df, npi_df) {
 
 draw_fig_11B <- function(df, base_df, npi_df) {
 
+  df2 <- df |> select(time, Rv) |>
+    mutate(Rv = 100 * Rv/ pop_val)
+
   ggplot(df, aes(time, 100 * C / pop_val)) +
     geom_line(colour = clrs[[1]]) +
     geom_line(data = base_df, colour = "grey75", linetype = "dotdash") +
     geom_line(data = npi_df, colour = "grey50", linetype = "dashed") +
+    geom_line(data = df2, aes(y = Rv), colour = clrs[[3]],
+              linetype = "dotted") +
     annotate("text", label = "Base case", x = 78, y = 88, colour = "grey75",
              size = 2.5) +
     annotate("text", label = "TTI + MR", x = 265, y = 80, colour = "grey50",
              size = 2.5) +
     annotate("text", label = "TTI + MR + V", x = 275, y = 55,
              colour = clrs[[1]], size = 2.5) +
+    annotate("text", label = "Immune (vaccination)", x = 285, y = 15,
+             colour = clrs[[3]], size = 2.5) +
     geom_vline(xintercept = 180, colour = clrs[[1]], alpha = 0.15) +
     scale_y_continuous(limits = c(0, 100)) +
     labs(x = "Day",

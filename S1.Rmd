@@ -6,6 +6,7 @@ output:
     toc_float:
       smooth_scroll: FALSE
     number_sections: true
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -37,9 +38,12 @@ bio_params        <- as.list(bio_df$Value)
 names(bio_params) <- bio_df$Parameter
 ```
 
-This electronic supplementary material aims to document in a reproducible manner
-the simulation results presented in the main text regarding the 
-**no-intervention** sub-models (*SEI3R* and *SEI3RD*).
+This electronic supplementary material supports the results presented in the 
+main text regarding the **no-intervention** sub-models (*SEI3R* and *SEI3RD*).
+Specifically, this HTML file is the rendered version of a dynamic document 
+(R markdown) containing the *R* code that simulates the models and produces
+the plots shown in the main text. Additionally, this file includes supplementary
+information to complement the discussion in the main text.
 
 # Basic reproduction number ($\Re_0$) 
 
@@ -88,11 +92,9 @@ F_matrix |>
 
 # Simulations
 
-## Attack rate
+## SEI3R
 
-We perform simulations for two variants of the within-host profile. Unlike the
-first variant (*SEI3R*), the second one accounts for disease-induced mortality
-(*SEI3RD*).
+We simulate the SEI3R model ~1000 times to produce Fig 2 in the main text.
 
 ```{r}
 set.seed(1550)
@@ -133,6 +135,26 @@ SEI3R_df <- SEI3R_df |>
 ```
 
 ```{r}
+g <- plot_fig_02(SEI3R_df)
+
+ggsave("./plots/Fig_02_Attack_rate.pdf", plot = g, 
+       height = 3, width = 5)
+```
+
+
+## SEI3RD 
+
+We compare the simulations from the *SEI3R* against those produced by a similar
+model that accounts for disease-induced mortality (*SEI3RD*). This comparison
+indicates that the dynamics created by both models are nearly equivalent at a 
+mortality level similar to that of the 1918 influenza pandemic 
+[@Taubenberger_Morens_2006]. This comparison is not performed to indicate that 
+the number of deaths is negligible. In fact, the *SEI3RD* estimates between 
+*290 000* and *360 000* disease-induced deaths. However, omitting 
+disease-induced mortality does not compromise the overall insights derived from 
+this work and facilitates the incorporation of additional structures.
+
+```{r}
 mdl2 <- read_xmile("./models/1B_SEI3RD.stmx",
                   const_list = c(bio_params, 
                                  list(par_rho = 0.025)))
@@ -164,25 +186,21 @@ SEI3RD_df <- SEI3RD_df |>
          model = "SEI3RD")
 ```
 
-```{r, fig.height = 4}
+```{r, fig.cap = "Fig 1. Comparison between the SEI3R and the SEI3RD", fig.height = 4}
 df <- bind_rows(SEI3R_df, SEI3RD_df)
-
-plot_fig_02(df) -> g
-
-ggsave("./plots/Fig_02_Attack_rate.pdf", plot = g, 
-       height = 4, width = 7)
-
-g
+plot_fig_02(df)
 ```
 
-## Final size
+### Final size
 
 To further illustrate that incorporating disease-induced mortality does not 
 substantially impact the dynamics of the within-host profile, we compare the
 attack rates obtained from both variants at day 150.
 
-```{r}
+```{r, fig.cap = "Fig 2. Distribution of the final size by model"}
 df2 <- df |> filter(time == 150)
 
 plot_final_size(df2)
 ```
+
+# References
