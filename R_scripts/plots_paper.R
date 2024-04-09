@@ -83,7 +83,7 @@ draw_fig_4C <- function(df) {
     geom_line(colour = clrs[[1]]) +
     labs(x = "Day",
          y = parse(text = "\u211c[t]"),
-         caption =  parse(text = "'Dotdash line:'~\u211c[0]")) +
+         caption =  parse(text = "'Dot-dash line:'~\u211c[0]")) +
     geom_hline(yintercept = 3, linetype = "dotdash") +
     theme_classic() +
     theme(text = element_text(family = "Arial Unicode MS"),

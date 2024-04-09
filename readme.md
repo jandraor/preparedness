@@ -3,11 +3,11 @@
 
 This repository contains code for the paper:
 
-[Jair Andrade](jandraor.github.io), Berend Beishuizen, Mart Stein,
-[Máire
+[Jair Andrade](https://jandraor.github.io/), Berend Beishuizen, Mart
+Stein, [Máire
 Connolly](https://www.universityofgalway.ie/our-research/people/health-sciences/maireconnolly/)
-and [Jim Duggan](https://ie.linkedin.com/in/jduggan). *Preparing for
-pandemic response in the context of limited resources*.
+and [Jim Duggan](https://github.com/JimDuggan). *Preparing for pandemic
+response in the context of limited resources*.
 
 The analysis in this study can be reproduced by executing the files:
 

@@ -38,11 +38,13 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>N - P0</eqn>
 				<outflow>S_to_E</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<outflow>E_to_P</outflow>
@@ -50,18 +52,21 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -84,6 +89,7 @@
 				<units>People/Days</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -98,51 +104,63 @@
 				<units>People/Days</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="N">
+				<doc>Population size</doc>
 				<eqn>17475415</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection</doc>
 				<eqn>par_beta * (P + I + par_eta * A) / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction.</doc>
 				<eqn>0.84</eqn>
 				<units>unitless</units>
 			</aux>
 			<aux name="P0">
+				<doc>Initial number of pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par nu">
+				<doc>Symptom onset rate.</doc>
 				<eqn>1</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par eta">
+				<doc>Relative infectiousness</doc>
 				<eqn>0.5</eqn>
 				<units>unitless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>Incidence rate</doc>
 				<eqn>S_to_E</eqn>
 				<units>People/Days</units>
 			</flow>
 			<aux name="par beta">
+				<doc>Effective contact rate</doc>
 				<eqn>0.75</eqn>
 				<units>1/day</units>
 			</aux>
@@ -259,7 +277,7 @@
 						<pt x="687.5" y="165"/>
 					</pts>
 				</flow>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="507" y="276" name="A"/>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="507" y="276" name="A"/>
 				<flow color="#797979" font_color="#797979" x="400.25" y="275" name="E to A">
 					<pts>
 						<pt x="328" y="182.5"/>

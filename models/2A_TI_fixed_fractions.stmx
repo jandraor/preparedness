@@ -2,7 +2,7 @@
 <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
 	<header>
 		<smile version="1.0" namespace="std, isee" uses_arrays="1"/>
-		<name>03c_Testing_Isolation</name>
+		<name>2A_TI_fixed_fractions</name>
 		<uuid>10d526ce-b9f8-458c-9d99-84379d39a4a1</uuid>
 		<vendor>isee systems, inc.</vendor>
 		<product version="3.0" isee:build_number="2658" isee:saved_by_v1="true" lang="en">Stella Architect</product>
@@ -76,11 +76,13 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>N - P0</eqn>
 				<outflow>S_to_E</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<outflow>E_to_P</outflow>
@@ -89,18 +91,21 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -124,6 +129,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -138,34 +144,42 @@
 				<units>people/day</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="N">
+				<doc>Population size</doc>
 				<eqn>17475415</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection</doc>
 				<eqn>par_beta * (P + Pd + I + Id * (1 - par_iota_d) + par_eta * A) / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction.</doc>
 				<eqn>0.84</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="P0">
+				<doc>Initial number of pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par nu">
+				<doc>Symptom onset rate.</doc>
 				<eqn>1</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -175,19 +189,23 @@
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>Incidence rate</doc>
 				<eqn>S_to_E</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="par beta">
+				<doc>Effective contact rate</doc>
 				<eqn>1.086957</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Id">
+				<doc>Diagnosed clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>Pd_to_Id</inflow>
 				<outflow>Id_to_R</outflow>
@@ -202,6 +220,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="Pd">
+				<doc>Eventually diagnosed pre-clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_Pd</inflow>
 				<outflow>Pd_to_Id</outflow>
@@ -212,11 +231,12 @@
 				<units>people/day</units>
 			</flow>
 			<aux name="par theta d">
-				<doc>Testing rate</doc>
+				<doc>Testing fraction.</doc>
 				<eqn>0.25</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="par iota d">
+				<doc>Willingness to isolate.</doc>
 				<eqn>0.52</eqn>
 				<units>Dimensionless</units>
 			</aux>

@@ -2,7 +2,7 @@
 <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
 	<header>
 		<smile version="1.0" namespace="std, isee"/>
-		<name>04d_Contact_tracing_test_pre_symp</name>
+		<name>2E_TTI_logistic_pre_symp</name>
 		<uuid>10d526ce-b9f8-458c-9d99-84379d39a4a1</uuid>
 		<vendor>isee systems, inc.</vendor>
 		<product version="3.0" isee:build_number="2658" isee:saved_by_v1="true" lang="en">Stella Architect</product>
@@ -69,6 +69,7 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>N - P0</eqn>
 				<inflow>Sq_to_S</inflow>
 				<outflow>S_to_E</outflow>
@@ -77,6 +78,7 @@
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<outflow>E_to_P</outflow>
@@ -85,18 +87,21 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -122,6 +127,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -136,35 +142,43 @@
 				<units>people/day</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="N">
+				<doc>Population size</doc>
 				<eqn>17475415</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection</doc>
 				<eqn>lambda_A + lambda_Aq + lambda_I + lambda_Id + lambda_Iq + lambda_P + lambda_Pd + lambda_Pq</eqn>
 				<isee:summing/>
 				<units>1/day</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction.</doc>
 				<eqn>0.84</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="P0">
+				<doc>Initial number of pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par nu">
+				<doc>Symptom onset rate.</doc>
 				<eqn>1</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -174,19 +188,23 @@
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>incidence rate</doc>
 				<eqn>S_to_E + S_to_Eq</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="var beta">
+				<doc>Effective contact rate</doc>
 				<eqn>par_zeta * par_upsilon</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Id">
+				<doc>Diagnosed clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>Pd_to_Id</inflow>
 				<outflow>Id_to_R</outflow>
@@ -201,6 +219,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="Pd">
+				<doc>Eventually diagnosed pre-clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_Pd</inflow>
 				<outflow>Pd_to_Id</outflow>
@@ -211,6 +230,7 @@
 				<units>people/day</units>
 			</flow>
 			<aux name="var theta">
+				<doc>Time-varying testing fraction.</doc>
 				<eqn>IF Dd = 0 
 THEN 0  
 ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
@@ -222,17 +242,17 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day/Days</units>
 			</flow>
 			<aux name="par alpha d">
-				<doc>Long-term testing capacity</doc>
+				<doc>Maximum testing capacity per 1000 population</doc>
 				<eqn>100</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par rho d">
-				<doc>Unconstrained growth of vaccination capacity. Rough estimate from the Netherlands: 0.017</doc>
+				<doc>Growth of available testing capacity.</doc>
 				<eqn>0.15</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Qd">
-				<doc>Testing capacity</doc>
+				<doc>Available testing capacity.</doc>
 				<eqn>100</eqn>
 				<inflow>Change_Qd</inflow>
 				<units>people/day</units>
@@ -243,11 +263,12 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="Dd">
-				<doc>Testing demand</doc>
+				<doc>Potential testing demand. It&apos;s potential because not every individual who develops symptoms seeks a diagnostic test.</doc>
 				<eqn>par_omega * par_sigma *E</eqn>
 				<units>People/day</units>
 			</aux>
 			<stock name="Sq">
+				<doc>Susceptible individuals in quarantine.</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_Sq</inflow>
 				<outflow>Sq_to_S</outflow>
@@ -266,6 +287,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>People/day</units>
 			</flow>
 			<stock name="Eq">
+				<doc>Exposed (infected but no infectious) individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_Eq</inflow>
 				<outflow>Eq_to_Iq</outflow>
@@ -277,6 +299,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>People/day</units>
 			</flow>
 			<stock name="Pq">
+				<doc>Pre-clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Eq_to_Iq</inflow>
 				<outflow>Pq_to_Iq</outflow>
@@ -287,11 +310,12 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="var mu i">
-				<doc>Rate at which infected susceptible individuals are contact traced.</doc>
+				<doc> Rate at which infections are contact traced.</doc>
 				<eqn>par_upsilon * var_zeta_k * Pd  / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par zeta">
+				<doc>Average number of contacts per person.</doc>
 				<eqn>10.86957</eqn>
 				<units>1/day</units>
 			</aux>
@@ -301,7 +325,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="Qk">
-				<doc>Daily capacity to track close contacts of detected infectious individuals. </doc>
+				<doc>Available tracing capacity.</doc>
 				<eqn>0.05331</eqn>
 				<inflow>Change_Qk</inflow>
 				<units>people/day</units>
@@ -312,12 +336,12 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day/Days</units>
 			</flow>
 			<aux name="par alpha k">
-				<doc>Long-term contact tracing capacity.</doc>
+				<doc>Maximum tracing capacity per 1000 population</doc>
 				<eqn>50</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par rho k">
-				<doc>Unconstrained growth of contact tracing capacity.</doc>
+				<doc>Growth of available tracing capacity.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -357,6 +381,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par iota d">
+				<doc>Willingness to isolate.</doc>
 				<eqn>0.51</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -380,12 +405,14 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</flow>
 			<stock name="Aq">
+				<doc>Sub-clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Eq_to_Aq</inflow>
 				<outflow>Aq_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="Iq">
+				<doc>Clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Pq_to_Iq</inflow>
 				<outflow>Iq_to_R</outflow>
@@ -408,6 +435,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>1/day</units>
 			</aux>
 			<aux name="var zeta k">
+				<doc>Average number of contact-traced individuals.</doc>
 				<eqn>IF Pd = 0
 THEN 0
 ELSE (k/Pd)</eqn>
@@ -465,7 +493,7 @@ ELSE (k/Pd)</eqn>
 				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
 				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
 			</style>
-			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="2" isee:page_rows="5" isee:scroll_x="208.571" isee:scroll_y="214.286" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="2" isee:page_rows="5" isee:scroll_y="117.857" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
 				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
 					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
 						<shape type="rectangle" width="45" height="35"/>
@@ -1305,7 +1333,7 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>Dk</to>
 				</connector>
-				<connector uid="107" angle="90.2384">
+				<connector uid="107" angle="90.2389">
 					<from>Dk</from>
 					<to>k</to>
 				</connector>

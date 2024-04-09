@@ -69,6 +69,7 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>(N - P0) *  par_iota_v</eqn>
 				<inflow>Sq_to_S</inflow>
 				<outflow>S_to_E</outflow>
@@ -79,6 +80,7 @@
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<inflow>Sv_to_E</inflow>
@@ -89,18 +91,21 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>P0</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -127,6 +132,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -137,34 +143,42 @@
 				<units>people/day</units>
 			</flow>
 			<flow name="A to R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>par_kappa * A</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="N">
+				<doc>Population size</doc>
 				<eqn>17475415</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction.</doc>
 				<eqn>0.84</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="P0">
+				<doc>Initial number of pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par nu">
+				<doc>Symptom onset rate.</doc>
 				<eqn>1</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -174,19 +188,23 @@
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>Incidence rate</doc>
 				<eqn>S_to_E + Sv_to_E + Sh_to_Ei + S_to_E_i +Sh_to_E</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="B">
+				<doc>Effective contact rate</doc>
 				<eqn>var_zeta_t * par_upsilon</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Id">
+				<doc>Diagnosed clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>Pd_to_Id</inflow>
 				<outflow>Id_to_R</outflow>
@@ -201,6 +219,7 @@
 				<units>people/day</units>
 			</flow>
 			<stock name="Pd">
+				<doc>Eventually diagnosed pre-clinical infectious individuals.</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_Pd</inflow>
 				<outflow>Pd_to_Id</outflow>
@@ -211,6 +230,7 @@
 				<units>people/day</units>
 			</flow>
 			<aux name="var theta">
+				<doc>Time-varying testing fraction.</doc>
 				<eqn>IF Dd = 0 
 THEN 0  
 ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
@@ -222,17 +242,17 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day/Days</units>
 			</flow>
 			<aux name="par alpha d">
-				<doc>Long-term testing capacity</doc>
+				<doc>Maximum testing capacity per 1000 population</doc>
 				<eqn>17475415</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par rho d">
-				<doc>Unconstrained growth of vaccination capacity.</doc>
+				<doc>Growth of available testing capacity.</doc>
 				<eqn>0</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Qd">
-				<doc>Testing capacity</doc>
+				<doc>Available testing capacity.</doc>
 				<eqn>17475415 * 0</eqn>
 				<inflow>Change_Qd</inflow>
 				<units>people/day</units>
@@ -243,11 +263,12 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="Dd">
-				<doc>Testing demand</doc>
+				<doc>Potential testing demand. It&apos;s potential because not every individual who develops symptoms seeks a diagnostic test.</doc>
 				<eqn>par_omega * par_sigma *E</eqn>
 				<units>People/day</units>
 			</aux>
 			<stock name="Sq">
+				<doc>Susceptible individuals in quarantine.</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_Sq</inflow>
 				<outflow>Sq_to_S</outflow>
@@ -266,6 +287,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>People/day</units>
 			</flow>
 			<stock name="Eq">
+				<doc>Exposed (infected but no infectious) individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E_i</inflow>
 				<inflow>Sh_to_Ei</inflow>
@@ -278,11 +300,12 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="var zeta t">
+				<doc>Time-varying contact rate. That is, the number of daily contacts per person.</doc>
 				<eqn>par_zeta_0 * Z</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par upsilon">
-				<doc>Probability of Infection</doc>
+				<doc>Probability of infection.</doc>
 				<eqn>0.1</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -307,6 +330,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par iota d">
+				<doc>Willingness to isolate.</doc>
 				<eqn>0.52</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -331,6 +355,7 @@ ELSE MIN(par_delta * Dd, testing_supply)/Dd</eqn>
 				<units>1/day</units>
 			</flow>
 			<stock name="Qm">
+				<doc>Budget for mobility restrictions</doc>
 				<eqn>60 * 0</eqn>
 				<outflow>Decrease_Qm</outflow>
 				<units>Dimensionless</units>
@@ -357,7 +382,7 @@ ELSE 0</eqn>
 				<units>Days</units>
 			</aux>
 			<aux name="par xi" access="input">
-				<doc>Restriction severity</doc>
+				<doc>Restriction stringency. It&apos;s a value between 0 &amp; 1.</doc>
 				<eqn>0.8</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -367,14 +392,17 @@ ELSE 0</eqn>
 				<units>1/day</units>
 			</aux>
 			<flow name="S to R">
+				<doc>Effective vaccination rate.</doc>
 				<eqn>par_phi * var_psi * S</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="par iota v">
+				<doc>Fraction of individuals who are willing to get a vaccine. Affects stocks S &amp; Sh.</doc>
 				<eqn>0.72</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="Sv">
+				<doc>Individuals who remain susceptible after vaccination.</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_Sv</inflow>
 				<outflow>Sv_to_E</outflow>
@@ -389,6 +417,7 @@ ELSE 0</eqn>
 				<units>people/day</units>
 			</flow>
 			<aux name="var psi">
+				<doc>Time-varying vaccination fraction.</doc>
 				<eqn>MIN(Vaccine_demand,  Vaccine_supply) / S</eqn>
 				<units>1/day</units>
 			</aux>
@@ -398,6 +427,7 @@ ELSE 0</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="Qv">
+				<doc>Available vaccination capacity.</doc>
 				<eqn>2.45</eqn>
 				<inflow>Change_Qv</inflow>
 				<units>people/day</units>
@@ -409,25 +439,29 @@ ELSE 0</eqn>
 				<units>people/day/Days</units>
 			</flow>
 			<aux name="par rho v">
+				<doc>Growth of available vaccination capacity.</doc>
 				<eqn>0.15</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par alpha v">
+				<doc>Maximum vaccination capacity per 1000 population</doc>
 				<eqn>12.26</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par tau v">
+				<doc>Time at which vaccines become available.</doc>
 				<eqn>30</eqn>
 				<units>Days</units>
 			</aux>
 			<aux name="Vaccine supply">
+				<doc>Auxiliary function to make vaccination available at a given date.</doc>
 				<eqn>IF TIME &gt;= par_tau_v 
 THEN Qv * N / scaler 
 ELSE 0</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par zeta 0">
-				<doc>Number of daily contacts per person in the absence of mobility interventions</doc>
+				<doc>Number of daily contacts per person in the absence of mobility interventions.</doc>
 				<eqn>9</eqn>
 				<units>1/day</units>
 			</aux>
@@ -436,23 +470,25 @@ ELSE 0</eqn>
 				<units>People</units>
 			</aux>
 			<aux name="par delta">
-				<doc>Percentage of clinical individuals that seek a diagnostic test
+				<doc>Percentage of clinical individuals seeking a diagnostic test
 
 Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<eqn>0.45</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="Vaccine demand">
+				<doc>Vaccine demand.</doc>
 				<eqn>uc * S</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection</doc>
 				<eqn>lambda_A + lambda_Aq + lambda_I + lambda_Id + lambda_Iq + lambda_P + lambda_Pd + lambda_Pq</eqn>
 				<isee:summing/>
 				<units>1/day</units>
 			</aux>
 			<stock name="Sh">
-				<doc>Susceptible individual who refuse to get a vaccine</doc>
+				<doc>Susceptible individuals who are hesitant to vaccination.</doc>
 				<eqn>(N - P0) * (1 -  par_iota_v)</eqn>
 				<inflow>Shq_to_Sh</inflow>
 				<outflow>Sh_to_Ei</outflow>
@@ -471,6 +507,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</flow>
 			<stock name="Shq">
+				<doc>Susceptible individuals who are hesitant to vaccines in quarantine.</doc>
 				<eqn>0</eqn>
 				<inflow>Sh_to_Shq</inflow>
 				<outflow>Shq_to_Sh</outflow>
@@ -485,6 +522,7 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</flow>
 			<stock name="Pq">
+				<doc>Pre-clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Eq_to_Iq</inflow>
 				<outflow>Pq_to_Iq</outflow>
@@ -499,12 +537,14 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</flow>
 			<stock name="Aq">
+				<doc>Sub-clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Eq_to_Aq</inflow>
 				<outflow>Aq_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="Iq">
+				<doc>Clinical infectious individuals in quarantine</doc>
 				<eqn>0</eqn>
 				<inflow>Pq_to_Iq</inflow>
 				<outflow>Iq_to_R</outflow>
@@ -519,12 +559,12 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</flow>
 			<aux name="var mu i">
-				<doc>Rate at which infected susceptible individuals are contact traced.</doc>
+				<doc>Per capita rate at which infections are contact traced.</doc>
 				<eqn>par_upsilon * var_zeta_k * Pd  / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Qk">
-				<doc>Daily capacity to track close contacts of detected infectious individuals. </doc>
+				<doc>Available tracing capacity.</doc>
 				<eqn>0.05331</eqn>
 				<inflow>Change_Qk</inflow>
 				<units>people/day</units>
@@ -535,12 +575,12 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day/Days</units>
 			</flow>
 			<aux name="par alpha k">
-				<doc>Long-term contact tracing capacity.</doc>
+				<doc>Maximum tracing capacity per 1000 population</doc>
 				<eqn>100</eqn>
 				<units>people/day</units>
 			</aux>
 			<aux name="par rho k">
-				<doc>Unconstrained growth of contact tracing capacity.</doc>
+				<doc>Growth of available tracing capacity.</doc>
 				<eqn>0.02594023 * 10</eqn>
 				<units>1/day</units>
 			</aux>
@@ -560,11 +600,12 @@ Source: https://coronadashboard.government.nl/landelijk/gedrag</doc>
 				<units>people/day</units>
 			</aux>
 			<aux name="var mu s">
-				<doc>Rate at which non-infected susceptible individuals are contact traced.</doc>
+				<doc>Per-capita rate at which non-infected susceptible individuals are contact traced.</doc>
 				<eqn>(1 - par_upsilon) * var_zeta_k * Pd / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="var zeta k">
+				<doc>Average number of contact-traced individuals.</doc>
 				<eqn>IF Pd = 0
 THEN 0
 ELSE (k/Pd)</eqn>
@@ -579,7 +620,7 @@ ELSE (k/Pd)</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="Rv">
-				<doc>Recovered or immune due to vaccination</doc>
+				<doc>Recovered or immune due to vaccination.</doc>
 				<eqn>0</eqn>
 				<inflow>Rv_in</inflow>
 				<units>People</units>
@@ -635,7 +676,7 @@ ELSE (k/Pd)</eqn>
 				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
 				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
 			</style>
-			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="3" isee:page_rows="4" isee:scroll_x="167.143" isee:scroll_y="377.143" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="3" isee:page_rows="4" isee:scroll_y="485" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
 				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
 					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
 						<shape type="rectangle" width="45" height="35"/>
@@ -764,10 +805,10 @@ ELSE (k/Pd)</eqn>
 					<from>A</from>
 					<to>A_to_R</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="698.16" y="715.428" width="46.25" height="14" name="par kappa">
+				<aux color="#797979" font_color="#797979" x="698.16" y="720.429" width="46.25" height="14" name="par kappa">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="13" angle="30.444">
+				<connector uid="13" angle="33.8628">
 					<from>par_kappa</from>
 					<to>A_to_R</to>
 				</connector>
@@ -790,11 +831,11 @@ ELSE (k/Pd)</eqn>
 				<aux color="#797979" font_color="#797979" x="1108.59" y="734.429" width="34.25" height="14" name="par eta">
 					<shape type="name_only"/>
 				</aux>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="985" y="885.858" name="C"/>
-				<flow color="#797979" font_color="#797979" x="915.464" y="885.858" name="C in">
+				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="1042" y="900.858" name="C"/>
+				<flow color="#797979" font_color="#797979" x="972.465" y="900.858" name="C in">
 					<pts>
-						<pt x="856.429" y="885.858"/>
-						<pt x="962.5" y="885.858"/>
+						<pt x="913.429" y="900.858"/>
+						<pt x="1019.5" y="900.858"/>
 					</pts>
 				</flow>
 				<aux color="#797979" font_color="#797979" x="1476.78" y="493.142" width="12.25" height="14" name="B">
@@ -955,17 +996,17 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>Sq_to_S</to>
 				</connector>
-				<flow color="#797979" font_color="#797979" label_side="top" x="363.732" y="261.643" name="S to E i">
+				<flow color="#797979" font_color="#797979" label_side="top" x="364.597" y="261.643" name="S to E i">
 					<pts>
 						<pt x="311.429" y="557.928"/>
 						<pt x="311.429" y="261.643"/>
-						<pt x="428.035" y="261.643"/>
+						<pt x="429.765" y="261.643"/>
 					</pts>
 				</flow>
-				<stock color="black" font_color="black" label_side="center" x="450.535" y="261.643" name="Eq"/>
+				<stock color="black" font_color="black" label_side="center" x="452.265" y="261.643" name="Eq"/>
 				<flow color="#797979" font_color="#797979" label_side="top" x="528.178" y="379.286" name="Eq to Iq">
 					<pts>
-						<pt x="473.035" y="276.893"/>
+						<pt x="474.765" y="276.893"/>
 						<pt x="513.571" y="276.893"/>
 						<pt x="513.571" y="379.286"/>
 						<pt x="554.785" y="379.286"/>
@@ -1011,7 +1052,7 @@ ELSE (k/Pd)</eqn>
 				<aux color="#797979" font_color="#797979" x="1030.02" y="279.143" width="44.25" height="14" name="lambda P">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="165" angle="277.475">
+				<connector uid="165" angle="270">
 					<from>
 						<alias uid="164"/>
 					</from>
@@ -1264,14 +1305,14 @@ ELSE (k/Pd)</eqn>
 					<from>par_rho_v</from>
 					<to>Change_Qv</to>
 				</connector>
-				<connector uid="236" angle="152.447">
+				<connector uid="236" angle="205.609">
 					<from>Qv</from>
 					<to>Change_Qv</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="659.446" y="1010.14" width="50.25" height="14" name="par alpha v">
+				<aux color="#797979" font_color="#797979" x="796.446" y="1104.17" width="50.25" height="14" name="par alpha v">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="237" angle="319.077">
+				<connector uid="237" angle="152.538">
 					<from>par_alpha_v</from>
 					<to>Change_Qv</to>
 				</connector>
@@ -1291,7 +1332,7 @@ ELSE (k/Pd)</eqn>
 					<from>Qv</from>
 					<to>Vaccine_supply</to>
 				</connector>
-				<connector uid="243" angle="138.873">
+				<connector uid="243" angle="132.311">
 					<from>Vaccine_supply</from>
 					<to>var_psi</to>
 				</connector>
@@ -1337,7 +1378,7 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>Vaccine_demand</to>
 				</connector>
-				<connector uid="258" angle="1.35971">
+				<connector uid="258" angle="1.35948">
 					<from>Vaccine_demand</from>
 					<to>var_psi</to>
 				</connector>
@@ -1494,9 +1535,9 @@ ELSE (k/Pd)</eqn>
 						<pt x="887.857" y="554.321"/>
 					</pts>
 				</flow>
-				<flow color="#797979" font_color="#797979" label_side="top" x="557.553" y="261.643" name="Eq to Aq">
+				<flow color="#797979" font_color="#797979" label_side="top" x="558.418" y="261.643" name="Eq to Aq">
 					<pts>
-						<pt x="473.035" y="261.643"/>
+						<pt x="474.765" y="261.643"/>
 						<pt x="642.071" y="261.643"/>
 					</pts>
 				</flow>
@@ -1517,13 +1558,13 @@ ELSE (k/Pd)</eqn>
 					<from>Aq</from>
 					<to>Aq_to_R</to>
 				</connector>
-				<connector uid="307" angle="131.49">
+				<connector uid="307" angle="130.971">
 					<from>
 						<alias uid="308"/>
 					</from>
 					<to>Eq_to_Aq</to>
 				</connector>
-				<connector uid="309" angle="85.5059">
+				<connector uid="309" angle="84.596">
 					<from>
 						<alias uid="218"/>
 					</from>
@@ -1676,7 +1717,7 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>var_mu_s</to>
 				</connector>
-				<connector uid="341" angle="179.926">
+				<connector uid="341" angle="179.929">
 					<from>Dk</from>
 					<to>k</to>
 				</connector>
@@ -1698,13 +1739,13 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>lambda_Iq</to>
 				</connector>
-				<connector uid="348" angle="32.5353">
+				<connector uid="348" angle="33.6359">
 					<from>
 						<alias uid="349"/>
 					</from>
 					<to>S_to_Sq</to>
 				</connector>
-				<connector uid="350" angle="141.871">
+				<connector uid="350" angle="141.31">
 					<from>
 						<alias uid="351"/>
 					</from>
@@ -1716,7 +1757,7 @@ ELSE (k/Pd)</eqn>
 					</from>
 					<to>Sh_to_Shq</to>
 				</connector>
-				<connector uid="354" angle="320.983">
+				<connector uid="354" angle="324.05">
 					<from>
 						<alias uid="351"/>
 					</from>
@@ -1813,7 +1854,7 @@ ELSE (k/Pd)</eqn>
 						<pt x="716.786" y="886.429"/>
 					</pts>
 				</flow>
-				<connector uid="383" angle="318.351">
+				<connector uid="383" angle="319.073">
 					<from>S_to_R</from>
 					<to>Rv_in</to>
 				</connector>
@@ -1860,7 +1901,7 @@ ELSE (k/Pd)</eqn>
 					<shape type="name_only"/>
 					<of>par_upsilon</of>
 				</alias>
-				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="164" x="1031.43" y="223.929" width="28.5714" height="26.4286">
+				<alias color="#FF2600" font_style="italic" font_color="#FF2600" label_side="center" uid="164" x="1037.86" y="223" width="28.5714" height="26.4286">
 					<of>P</of>
 				</alias>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="167" x="1109.48" y="279.143" width="12.25" height="14">
@@ -1932,7 +1973,7 @@ ELSE (k/Pd)</eqn>
 					<shape type="name_only"/>
 					<of>scaler</of>
 				</alias>
-				<alias color="#797979" font_style="italic" font_color="#797979" label_side="top" uid="268" x="901" y="817.571" width="18" height="18">
+				<alias color="#797979" font_style="italic" font_color="#797979" label_side="top" uid="268" x="958" y="832.571" width="18" height="18">
 					<of>S_to_E</of>
 				</alias>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="271" x="353.265" y="460.428" width="31.25" height="14">
@@ -1950,16 +1991,16 @@ ELSE (k/Pd)</eqn>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="284" x="398.143" y="515.286" width="18" height="18">
 					<of>lambda</of>
 				</alias>
-				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="298" x="858.071" y="908.857" width="18" height="18">
+				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="298" x="915.071" y="923.857" width="18" height="18">
 					<of>Sh_to_Ei</of>
 				</alias>
-				<alias color="black" font_style="italic" font_color="black" label_side="top" uid="300" x="944.5" y="817.571" width="18" height="18">
+				<alias color="black" font_style="italic" font_color="black" label_side="top" uid="300" x="1001.5" y="832.571" width="18" height="18">
 					<of>Sv_to_E</of>
 				</alias>
-				<alias color="black" font_style="italic" font_color="black" uid="302" x="955.143" y="913.429" width="18" height="18">
+				<alias color="black" font_style="italic" font_color="black" uid="302" x="1012.14" y="928.429" width="18" height="18">
 					<of>S_to_E_i</of>
 				</alias>
-				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="303" x="990.393" y="817.571" width="18" height="18">
+				<alias color="#5E5E5E" font_style="italic" font_color="#5E5E5E" uid="303" x="1047.39" y="832.571" width="18" height="18">
 					<of>Sh_to_E</of>
 				</alias>
 				<alias color="#797979" font_style="italic" font_color="#797979" uid="308" x="580.749" y="308.714" width="49.25" height="14">

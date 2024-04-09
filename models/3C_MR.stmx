@@ -2,7 +2,7 @@
 <xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
 	<header>
 		<smile version="1.0" namespace="std, isee" uses_arrays="1"/>
-		<name>05_Mobility</name>
+		<name>3C_MR</name>
 		<uuid>fcb966c8-d5b8-49f2-b8bc-f58cc525066d</uuid>
 		<vendor>isee systems, inc.</vendor>
 		<product version="3.0" isee:build_number="2658" isee:saved_by_v1="true" lang="en">Stella Architect</product>
@@ -82,11 +82,13 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>N - P0</eqn>
 				<outflow>S_to_E</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<outflow>E_to_P</outflow>
@@ -94,18 +96,21 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -128,6 +133,7 @@
 				<units>People/Days</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -142,6 +148,7 @@
 				<units>People/Days</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -150,14 +157,17 @@
 				<units>People</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection.</doc>
 				<eqn>B * (P + I + par_eta * A) / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction.</doc>
 				<eqn>0.84</eqn>
 				<units>Dimensionless</units>
 			</aux>
@@ -166,10 +176,12 @@
 				<units>People</units>
 			</aux>
 			<aux name="par nu">
+				<doc>Symptom onset rate.</doc>
 				<eqn>1</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/5</eqn>
 				<units>1/day</units>
 			</aux>
@@ -178,11 +190,13 @@
 				<units>Dimensionless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>Incidence rate</doc>
 				<eqn>S_to_E</eqn>
 				<units>People/Days</units>
 			</flow>
@@ -207,6 +221,7 @@
 				<units>1/day</units>
 			</flow>
 			<stock name="Qm">
+				<doc>Budget for mobility restrictions</doc>
 				<eqn>60</eqn>
 				<outflow>Decrease_Qm</outflow>
 				<units>Dimensionless</units>
@@ -233,15 +248,17 @@ ELSE 0</eqn>
 				<units>Days</units>
 			</aux>
 			<aux name="par xi" access="input">
-				<doc>Severity</doc>
+				<doc>Restriction stringency. It&apos;s a value between 0 &amp; 1.</doc>
 				<eqn>0.8</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="par upsilon">
+				<doc>Probability of infection.</doc>
 				<eqn>0.1</eqn>
 				<units>Dimensionless</units>
 			</aux>
 			<aux name="par zeta 0">
+				<doc>Number of daily contacts per person in the absence of mobility interventions.</doc>
 				<eqn>9</eqn>
 				<units>1/day</units>
 			</aux>
@@ -366,7 +383,7 @@ ELSE 0</eqn>
 						<pt x="645.5" y="679"/>
 					</pts>
 				</flow>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="465" y="790" name="A"/>
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="465" y="790" name="A"/>
 				<flow color="#797979" font_color="#797979" x="358.25" y="789" name="E to A">
 					<pts>
 						<pt x="286" y="696.5"/>
@@ -435,10 +452,10 @@ ELSE 0</eqn>
 					<from>P</from>
 					<to>P_to_I</to>
 				</connector>
-				<aux color="#797979" font_color="#797979" x="502.875" y="714" width="31.25" height="14" name="par nu">
+				<aux color="#797979" font_color="#797979" x="502.875" y="716" width="31.25" height="14" name="par nu">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="11" angle="143.374">
+				<connector uid="11" angle="142.09">
 					<from>par_nu</from>
 					<to>P_to_I</to>
 				</connector>

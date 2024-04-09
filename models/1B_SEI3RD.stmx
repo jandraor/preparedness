@@ -38,11 +38,13 @@
 	<model>
 		<variables>
 			<stock name="S">
+				<doc>Susceptible individuals</doc>
 				<eqn>N_init - P0</eqn>
 				<outflow>S_to_E</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="E">
+				<doc>Exposed (infected but no infectious)</doc>
 				<eqn>0</eqn>
 				<inflow>S_to_E</inflow>
 				<outflow>E_to_P</outflow>
@@ -50,12 +52,14 @@
 				<units>People</units>
 			</stock>
 			<stock name="P">
+				<doc>Pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<inflow>E_to_P</inflow>
 				<outflow>P_to_I</outflow>
 				<units>People</units>
 			</stock>
 			<stock name="I">
+				<doc>Clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>P_to_I</inflow>
 				<outflow>I_to_R</outflow>
@@ -63,6 +67,7 @@
 				<units>People</units>
 			</stock>
 			<stock name="R">
+				<doc>Recovered (immune) individuals</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_R</inflow>
 				<inflow>A_to_R</inflow>
@@ -85,6 +90,7 @@
 				<units>People/Days</units>
 			</flow>
 			<stock name="A">
+				<doc>Sub-clinical infectious individuals</doc>
 				<eqn>0</eqn>
 				<inflow>E_to_A</inflow>
 				<outflow>A_to_R</outflow>
@@ -99,22 +105,27 @@
 				<units>People/Days</units>
 			</flow>
 			<aux name="par gamma">
+				<doc>Rate at which clinical individuals recover.</doc>
 				<eqn>0.5</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="lambda">
+				<doc>Force of infection</doc>
 				<eqn>par_beta * (P + I + par_eta * A) / N</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par sigma">
+				<doc>Rate at which the exposed class becomes infectious.</doc>
 				<eqn>1/2</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par omega">
+				<doc>Clinical fraction</doc>
 				<eqn>0.84</eqn>
 				<units>unitless</units>
 			</aux>
 			<aux name="P0">
+				<doc>Initial number of pre-clinical infectious individuals.</doc>
 				<eqn>1</eqn>
 				<units>People</units>
 			</aux>
@@ -123,27 +134,33 @@
 				<units>1/day</units>
 			</aux>
 			<aux name="par kappa">
+				<doc>Rate at which sub-clinical individuals recover.</doc>
 				<eqn>1/3</eqn>
 				<units>1/day</units>
 			</aux>
 			<aux name="par eta">
+				<doc>Relative infectiousness</doc>
 				<eqn>0.5</eqn>
 				<units>unitless</units>
 			</aux>
 			<stock name="C">
+				<doc>Cumulative cases</doc>
 				<eqn>P0</eqn>
 				<inflow>C_in</inflow>
 				<units>People</units>
 			</stock>
 			<flow name="C in">
+				<doc>Incidence rate</doc>
 				<eqn>S_to_E</eqn>
 				<units>People/Days</units>
 			</flow>
 			<aux name="par beta">
+				<doc>Effective contact rate</doc>
 				<eqn>0.724637681 * 2</eqn>
 				<units>1/day</units>
 			</aux>
 			<stock name="D">
+				<doc>Disease-induced deaths</doc>
 				<eqn>0</eqn>
 				<inflow>I_to_D</inflow>
 				<units>People</units>
@@ -163,11 +180,13 @@
 				<units>unitless</units>
 			</aux>
 			<aux name="N">
+				<doc>Population size</doc>
 				<eqn>A + E + I + P + R + S</eqn>
 				<isee:summing/>
 				<units>People</units>
 			</aux>
 			<aux name="N init">
+				<doc>Initial population size</doc>
 				<eqn>17475415</eqn>
 				<units>People</units>
 			</aux>
@@ -218,7 +237,7 @@
 				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
 				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
 			</style>
-			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="2" isee:page_rows="2" isee:scroll_x="2" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+			<view isee:show_pages="false" background="white" page_width="822" page_height="575" isee:page_cols="2" isee:page_rows="2" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
 				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
 					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
 						<shape type="rectangle" width="45" height="35"/>
@@ -284,18 +303,18 @@
 						<pt x="689.5" y="258"/>
 					</pts>
 				</flow>
-				<stock color="#5E5E5E" font_color="#5E5E5E" label_side="center" x="509" y="369" name="A"/>
-				<flow color="#797979" font_color="#797979" x="402.25" y="368" name="E to A">
+				<stock color="#FF2600" font_color="#FF2600" label_side="center" x="510" y="367" name="A"/>
+				<flow color="#797979" font_color="#797979" x="402.75" y="366" name="E to A">
 					<pts>
 						<pt x="330" y="275.5"/>
-						<pt x="330" y="368"/>
-						<pt x="486.5" y="368"/>
+						<pt x="330" y="366"/>
+						<pt x="487.5" y="366"/>
 					</pts>
 				</flow>
-				<flow color="#797979" font_color="#797979" x="627.25" y="369" name="A to R">
+				<flow color="#797979" font_color="#797979" x="627.75" y="367" name="A to R">
 					<pts>
-						<pt x="531.5" y="369"/>
-						<pt x="711" y="369"/>
+						<pt x="532.5" y="367"/>
+						<pt x="711" y="367"/>
 						<pt x="711" y="275.5"/>
 					</pts>
 				</flow>
@@ -337,7 +356,7 @@
 				<aux color="#797979" font_color="#797979" x="261.875" y="335.5" width="49.25" height="14" name="par omega">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="8" angle="347.576">
+				<connector uid="8" angle="348.572">
 					<from>par_omega</from>
 					<to>E_to_A</to>
 				</connector>
@@ -364,7 +383,7 @@
 				<aux color="#797979" font_color="#797979" x="561.875" y="398" width="46.25" height="14" name="par kappa">
 					<shape type="name_only"/>
 				</aux>
-				<connector uid="13" angle="40.4334">
+				<connector uid="13" angle="41.6335">
 					<from>par_kappa</from>
 					<to>A_to_R</to>
 				</connector>
@@ -380,7 +399,7 @@
 					<from>E</from>
 					<to>E_to_A</to>
 				</connector>
-				<connector uid="17" angle="247.38">
+				<connector uid="17" angle="247.085">
 					<from>par_sigma</from>
 					<to>E_to_A</to>
 				</connector>

@@ -788,13 +788,14 @@ we have seen previously, the susceptible fraction collapses simply because the
 infection runs its course as though there were no interventions. The second 
 scenario (beige lines) involves the implementation of *TTI + MR*, where mobility
 restrictions are deployed at day 40 with a stringency of 0.8. Although this
-intervention reduces $\Re_t$ below the epidemic threshold (dashed line), the 
-susceptible fraction remains above the target (dotted line). Therefore, once the
-mobility restrictions are lifted, $\Re_t$ rises above the epidemic threshold, 
-leading to a second wave of infections. In contrast, the ideal scenario (*3*) 
-with a stringency of 0.62 also drives $\Re_t$ below 1 but allows the susceptible
-fraction to reach the intended target. Consequently, when mobility restrictions
-are lifted, $\Re_t$ cannot surge to produce a new outbreak.
+intervention reduces $\Re_t$ below the epidemiological threshold (dashed line),
+the susceptible fraction remains above the target (dotted line). Therefore, once
+the mobility restrictions are lifted, $\Re_t$ rises above the epidemic 
+threshold, leading to a second wave of infections. In contrast, the ideal 
+scenario (*3*) with a stringency of 0.62 also drives $\Re_t$ below 1 but allows 
+the susceptible fraction to reach the intended target. Consequently, when 
+mobility restrictions are lifted, $\Re_t$ cannot surge to produce a new 
+outbreak.
 
 ```{r}
 mob_scn <- data.frame(par_xi = c(0, 0.8, 0.62),

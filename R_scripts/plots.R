@@ -54,7 +54,7 @@ plot_stringency_comparison <- function(df) {
     scale_colour_manual(values = clrs[c(1, 2, 4)]) +
     labs(x = "Days",
          y = parse(text = "\u211c[t]"),
-         caption = "Dashed line: Epidemic threshold") +
+         caption = "Dashed line: Epidemiological threshold") +
     theme_classic() +
     theme(text = element_text(family = "Arial Unicode MS"),
           axis.title       = element_text(colour = "grey65", size = 9),
