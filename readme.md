@@ -1,7 +1,8 @@
 
 # Andrade et al (2024)
 
-This repository contains code for the paper:
+This repository contains code for the
+[paper](https://doi.org/10.1002/sdr.1775):
 
 [Jair Andrade](https://jandraor.github.io/), Berend Beishuizen, Mart
 Stein, [Máire

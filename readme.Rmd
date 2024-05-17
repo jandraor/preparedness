@@ -4,11 +4,11 @@ output: github_document
 
 # Andrade et al (2024)
 
-This repository contains code for the paper:
+This repository contains code for the [paper](https://doi.org/10.1002/sdr.1775):
 
 [Jair Andrade](https://jandraor.github.io/), Berend Beishuizen, Mart Stein, 
 [Máire Connolly](https://www.universityofgalway.ie/our-research/people/health-sciences/maireconnolly/)
-and [Jim Duggan](https://github.com/JimDuggan). 
+and [Jim Duggan](https://github.com/JimDuggan).
 _Preparing for pandemic response in the context of limited resources_.
 
 The analysis in this study can be reproduced by executing the files:
